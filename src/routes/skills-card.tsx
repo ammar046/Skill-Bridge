@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { Download, QrCode, MessageSquare, Loader2, ShieldCheck } from "lucide-react";
 import QRCode from "qrcode";
 import jsPDF from "jspdf";
+import html2canvas from "html2canvas";
 import { useApp } from "@/context/AppContext";
 import { SignalPill } from "@/components/SignalPill";
 import {
@@ -49,61 +50,59 @@ function SkillsCard() {
     setQrOpen(true);
   }
 
-  function downloadPdf() {
-    if (!profile) return;
-    const doc = new jsPDF({ unit: "pt", format: "a4" });
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(20);
-    doc.text("UNMAPPED — Skills Card", 40, 60);
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(11);
-    doc.setTextColor(100);
-    doc.text(
-      `Issued ${new Date().toLocaleDateString()} · ${locale.country} (${locale.code})`,
-      40,
-      78,
-    );
+  async function downloadPdf() {
+    if (!profile || !cardRef.current) return;
 
-    doc.setTextColor(20);
-    doc.setFontSize(16);
-    doc.text(profile.name, 40, 120);
-    doc.setFontSize(11);
-    doc.setTextColor(100);
-    doc.text(`${profile.age ?? "—"} · ${profile.region}`, 40, 138);
+    const A4_WIDTH_PT = 595.28;
+    const A4_HEIGHT_PT = 841.89;
+    const MARGIN_PT = 32;
 
-    doc.setDrawColor(220);
-    doc.line(40, 158, 555, 158);
-
-    doc.setTextColor(20);
-    doc.setFontSize(13);
-    doc.text("Validated skills", 40, 184);
-
-    let y = 210;
-    profile.skills.forEach((s) => {
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(12);
-      doc.text(`• ${s.label}`, 40, y);
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(10);
-      doc.setTextColor(100);
-      doc.text(
-        `${s.formalName} · ISCO-08 ${s.iscoCode} · ${s.classification.toUpperCase()} · ${Math.round(s.confidence * 100)}%`,
-        56,
-        y + 14,
-      );
-      doc.setTextColor(20);
-      y += 36;
+    // Capture the visual card DOM
+    const canvas = await html2canvas(cardRef.current, {
+      scale: 2,
+      useCORS: true,
+      backgroundColor: null,
+      logging: false,
     });
 
-    doc.setFontSize(9);
-    doc.setTextColor(140);
+    const imgData = canvas.toDataURL("image/png");
+    const doc = new jsPDF({ unit: "pt", format: "a4", compress: true });
+
+    const availableW = A4_WIDTH_PT - MARGIN_PT * 2;
+    const pixelRatio = canvas.width / availableW;
+    const imgH = canvas.height / pixelRatio;
+    const maxImgH = A4_HEIGHT_PT - MARGIN_PT * 2 - 60; // leave footer space
+    const scaledH = Math.min(imgH, maxImgH);
+    const scaledW = (canvas.width / canvas.height) * scaledH;
+
+    doc.addImage(imgData, "PNG", MARGIN_PT, MARGIN_PT, scaledW, scaledH);
+
+    // Footer metadata
+    const footerY = MARGIN_PT + scaledH + 18;
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(8);
+    doc.setTextColor(160);
     doc.text(
-      "Open infrastructure for the informal economy · unmapped.dev",
-      40,
-      800,
+      `UNMAPPED Bridge Pass · ${profile.name} · Issued ${new Date().toLocaleDateString()} · ${locale.country} (${locale.code})`,
+      MARGIN_PT,
+      footerY,
     );
+
+    // ISCO codes list below footer
+    let y = footerY + 14;
+    doc.setFontSize(7.5);
+    profile.skills.forEach((s) => {
+      if (y > A4_HEIGHT_PT - 20) return;
+      doc.text(
+        `• ${s.label}  ISCO-08 ${s.iscoCode}  ${s.classification.toUpperCase()}`,
+        MARGIN_PT,
+        y,
+      );
+      y += 11;
+    });
+
     doc.save(
-      `unmapped-skills-${profile.name.toLowerCase().replace(/\s+/g, "-")}.pdf`,
+      `unmapped-bridge-pass-${profile.name.toLowerCase().replace(/\s+/g, "-")}.pdf`,
     );
   }
 

@@ -56,6 +56,21 @@ export interface TrainingProvider {
   url: string;
 }
 
+export interface MarketSignal {
+  category: string;
+  title: string;
+  snippet: string;
+  url: string;
+}
+
+export interface MarketSignalsResponse {
+  hiring: MarketSignal[];
+  training: MarketSignal[];
+  wages: MarketSignal[];
+  skill: string;
+  location: string;
+}
+
 export interface AdminAggregates {
   neetRate: number;
   hciScore: number;

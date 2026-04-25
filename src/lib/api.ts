@@ -1,49 +1,163 @@
-// Single API adapter — currently returns seeded JSON. Swap implementations
-// here when wiring the FastAPI backend; component code does not change.
+// API adapter — all calls go to the FastAPI backend.
+// postWithTimeout throws on error so callers can surface the exact message.
 
 import type {
   AdminAggregates,
+  MarketSignalsResponse,
   OpportunityMatch,
   ReadinessReport,
   TrainingProvider,
   UserProfile,
 } from "@/types/api";
-import { LOCALES, type CountryCode, type Locale } from "@/lib/locales";
-import { extractSkills } from "@/lib/skillsEngine";
+import { LOCALES, type Locale } from "@/lib/locales";
 
-const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
+export const API_BASE = "http://localhost:8000";
+
+// ─── Core fetch primitive ────────────────────────────────────────────────────
+
+export async function postWithTimeout<T>(
+  path: string,
+  body: unknown,
+  timeoutMs = 20000,
+): Promise<T> {
+  const controller = new AbortController();
+  const timer = setTimeout(
+    () => controller.abort("Request timed out after 20 s — check your connection."),
+    timeoutMs,
+  );
+  try {
+    const res = await fetch(`${API_BASE}${path}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+      signal: controller.signal,
+    });
+    clearTimeout(timer);
+    if (!res.ok) {
+      let detail = `HTTP ${res.status}`;
+      try {
+        const json = await res.json();
+        if (json?.detail) detail = `${res.status}: ${json.detail}`;
+      } catch {
+        /* ignore body parse failure */
+      }
+      throw new Error(`Backend error — ${detail}`);
+    }
+    return (await res.json()) as T;
+  } catch (err) {
+    clearTimeout(timer);
+    if (err instanceof DOMException && err.name === "AbortError") {
+      throw new Error("Request timed out after 20 s — check your connection.");
+    }
+    throw err;
+  }
+}
+
+// ─── Type helpers ────────────────────────────────────────────────────────────
+
+type BackendExtractedSkill = {
+  label: string;
+  isco_code: string;
+  esco_code: string;
+  status: string;
+};
+
+type BackendOpportunityMatch = {
+  title: string;
+  wage_floor: string;
+  growth_percent: string;
+  match_strength: number;
+};
+
+type BackendProfileResponse = {
+  user_skills: BackendExtractedSkill[];
+  matches: BackendOpportunityMatch[];
+};
+
+type BackendTrainingProvider = {
+  name: string;
+  type: string;
+  cost: string;
+  distance: string;
+  url?: string;
+};
+
+function localeCode(locale: Locale): string {
+  return locale.code.toLowerCase();
+}
+
+function parseCurrencyAmount(raw: string): number {
+  const n = Number((raw ?? "").replace(/[^\d.-]/g, ""));
+  return Number.isFinite(n) ? n : 0;
+}
+
+function parsePercent(raw: string): number {
+  const n = Number((raw ?? "").replace(/[^\d.-]/g, ""));
+  return Number.isFinite(n) ? n : 0;
+}
+
+function normalizeSkillStatus(status: string): "durable" | "at_risk" {
+  return status.toLowerCase().includes("risk") ? "at_risk" : "durable";
+}
+
+// ─── Public API functions ────────────────────────────────────────────────────
 
 export async function buildProfile(
   input: { name: string; age: number | null; region: string; narrative: string },
+  locale: Locale,
 ): Promise<UserProfile> {
-  await wait(350);
+  const apiData = await postWithTimeout<BackendProfileResponse>("/api/extract", {
+    narrative: input.narrative,
+    locale: localeCode(locale),
+  });
+
+  const skills = apiData.user_skills.map((skill, idx) => ({
+    id: `sk_${idx}_${Date.now().toString(36)}`,
+    label: skill.label,
+    formalName: skill.label,
+    iscoCode: skill.isco_code,
+    escoUri: skill.esco_code,
+    classification: normalizeSkillStatus(skill.status),
+    confidence: 0.8,
+    sourceQuote: input.narrative.slice(0, 140),
+  }));
+
   return {
     id: `usr_${Date.now().toString(36)}`,
     name: input.name,
     age: input.age,
     region: input.region,
     rawNarrative: input.narrative,
-    skills: extractSkills(input.narrative),
+    skills,
     createdAt: new Date().toISOString(),
   };
 }
 
-export async function getReadiness(profile: UserProfile, _locale: Locale): Promise<ReadinessReport> {
-  await wait(250);
-  // Score: average risk weighted by classification
-  const risk = profile.skills.reduce((acc, s) => {
-    return acc + (s.classification === "at_risk" ? 65 : 28) * s.confidence;
-  }, 0) / Math.max(profile.skills.length, 1);
+export async function getReadiness(
+  profile: UserProfile,
+  _locale: Locale,
+): Promise<ReadinessReport> {
+  const risk =
+    profile.skills.reduce(
+      (acc, s) => acc + (s.classification === "at_risk" ? 65 : 28) * s.confidence,
+      0,
+    ) / Math.max(profile.skills.length, 1);
   const score = Math.round(Math.max(8, Math.min(92, risk)));
-  const band: ReadinessReport["riskBand"] = score < 40 ? "LOW" : score < 65 ? "MEDIUM" : "HIGH";
+  const band: ReadinessReport["riskBand"] =
+    score < 40 ? "LOW" : score < 65 ? "MEDIUM" : "HIGH";
   const trend = Array.from({ length: 11 }, (_, i) => ({
     year: 2025 + i,
-    index: Math.round(100 + i * (band === "HIGH" ? -3.2 : band === "MEDIUM" ? 1.4 : 4.1) + (i % 2 ? 1 : -1) * 2),
+    index: Math.round(
+      100 +
+        i * (band === "HIGH" ? -3.2 : band === "MEDIUM" ? 1.4 : 4.1) +
+        (i % 2 ? 1 : -1) * 2,
+    ),
   }));
   return {
     automationRiskScore: score,
     riskBand: band,
-    freyOsborneNote: "Calibrated for LMIC context · Frey-Osborne adjusted (2017) with ILO informal-sector weighting.",
+    freyOsborneNote:
+      "Calibrated for LMIC context · Frey-Osborne adjusted (2017) with ILO informal-sector weighting.",
     demandTrend: trend,
     resilienceSuggestion: {
       skill: "IoT Repair",
@@ -54,72 +168,59 @@ export async function getReadiness(profile: UserProfile, _locale: Locale): Promi
   };
 }
 
-export async function getOpportunities(_profile: UserProfile, locale: Locale): Promise<OpportunityMatch[]> {
-  await wait(300);
-  const wage = locale.sampleWageFloor;
-  return [
-    {
-      id: "opp_1", title: "Electronics Technician",
-      summary: "Repair and service consumer electronics in independent shops or service centres.",
-      matchScore: 88, iloWageFloor: Math.round(wage * 1.0), sectorGrowthPct: 3.4,
-      requiredSkills: ["Mobile Device Repair", "Diagnostics", "Customer Service"],
-    },
-    {
-      id: "opp_2", title: "Solar Panel Installer",
-      summary: "Install and maintain rooftop solar systems for homes and small businesses.",
-      matchScore: 76, iloWageFloor: Math.round(wage * 1.18), sectorGrowthPct: 5.7,
-      requiredSkills: ["Electrical Install", "Safety", "Wiring"],
-    },
-    {
-      id: "opp_3", title: "Small Shop Operator",
-      summary: "Run a registered micro-business with formal bookkeeping and POS.",
-      matchScore: 71, iloWageFloor: Math.round(wage * 0.92), sectorGrowthPct: 1.1,
-      requiredSkills: ["Business Ops", "Cash Handling", "Inventory"],
-    },
-    {
-      id: "opp_4", title: "IoT Field Service",
-      summary: "Install and troubleshoot connected meters, sensors and small-business networking gear.",
-      matchScore: 64, iloWageFloor: Math.round(wage * 1.32), sectorGrowthPct: 6.9,
-      requiredSkills: ["Mobile Device Repair", "Networking", "Diagnostics"],
-    },
-    {
-      id: "opp_5", title: "Vocational Peer Trainer",
-      summary: "Lead short-cycle trainings at a community TVET centre.",
-      matchScore: 58, iloWageFloor: Math.round(wage * 1.05), sectorGrowthPct: 2.3,
-      requiredSkills: ["Peer Coaching", "Curriculum Basics"],
-    },
-  ];
+export async function getOpportunities(
+  _profile: UserProfile,
+  locale: Locale,
+): Promise<OpportunityMatch[]> {
+  const apiData = await postWithTimeout<BackendProfileResponse>("/api/extract", {
+    narrative: _profile.rawNarrative,
+    locale: localeCode(locale),
+  });
+  return apiData.matches.map((item, idx) => ({
+    id: `opp_${idx}_${Date.now().toString(36)}`,
+    title: item.title,
+    summary: `Match generated from your narrative for ${locale.country}.`,
+    matchScore: item.match_strength,
+    iloWageFloor: parseCurrencyAmount(item.wage_floor),
+    sectorGrowthPct: parsePercent(item.growth_percent),
+    requiredSkills: _profile.skills.slice(0, 3).map((s) => s.label),
+  }));
 }
 
-const PROVIDERS_BY_COUNTRY: Record<CountryCode, TrainingProvider[]> = {
-  GH: [
-    { id: "p1", name: "Accra Tech Skills Hub", city: "Accra", format: "In-person", durationWeeks: 12, url: "#" },
-    { id: "p2", name: "NVTI Tema Centre", city: "Tema", format: "Hybrid", durationWeeks: 24, url: "#" },
-    { id: "p3", name: "Kumasi Solar Academy", city: "Kumasi", format: "In-person", durationWeeks: 8, url: "#" },
-    { id: "p4", name: "Coursera × CTVET (Sponsored)", city: "Online", format: "Online", durationWeeks: 16, url: "#" },
-  ],
-  PK: [
-    { id: "p1", name: "TEVTA Lahore Mobile Repair", city: "Lahore", format: "In-person", durationWeeks: 12, url: "#" },
-    { id: "p2", name: "NAVTTC Karachi", city: "Karachi", format: "Hybrid", durationWeeks: 20, url: "#" },
-    { id: "p3", name: "Punjab Skills Dev Fund — Solar", city: "Multan", format: "In-person", durationWeeks: 10, url: "#" },
-    { id: "p4", name: "DigiSkills.pk", city: "Online", format: "Online", durationWeeks: 12, url: "#" },
-  ],
-};
-
-export async function searchProviders(query: string, locale: Locale): Promise<TrainingProvider[]> {
-  await wait(450); // simulate Tavily latency
-  const all = PROVIDERS_BY_COUNTRY[locale.code];
-  if (!query.trim()) return all;
-  const q = query.toLowerCase();
-  return all.filter((p) =>
-    p.name.toLowerCase().includes(q) ||
-    p.city.toLowerCase().includes(q) ||
-    p.format.toLowerCase().includes(q),
+export async function searchProviders(
+  query: string,
+  locale: Locale,
+): Promise<TrainingProvider[]> {
+  const skill = query.trim() || "general vocational";
+  const providers = await postWithTimeout<BackendTrainingProvider[]>(
+    "/api/opportunities/search",
+    { skill, location: locale.region },
   );
+  return providers.map((item, idx) => ({
+    id: `provider_${idx}_${Date.now().toString(36)}`,
+    name: item.name,
+    city: item.distance.replace(/^Near\s+/i, "") || locale.region,
+    format: item.type.toLowerCase().includes("online")
+      ? "Online"
+      : item.type.toLowerCase().includes("hybrid")
+        ? "Hybrid"
+        : ("In-person" as const),
+    durationWeeks: 12,
+    url: item.url && item.url !== "#" ? item.url : "",
+  }));
+}
+
+export async function getMarketSignals(
+  skill: string,
+  location: string,
+): Promise<MarketSignalsResponse> {
+  return postWithTimeout<MarketSignalsResponse>("/api/market-signals", {
+    skill,
+    location,
+  });
 }
 
 export async function getAdminAggregates(locale: Locale): Promise<AdminAggregates> {
-  await wait(200);
   return {
     neetRate: locale.policymakerStats.neetRate,
     hciScore: locale.policymakerStats.hciScore,

@@ -14,6 +14,7 @@ import { useApp } from "@/context/AppContext";
 import { getOpportunities, searchProviders } from "@/lib/api";
 import type { OpportunityMatch, TrainingProvider } from "@/types/api";
 import { formatWage } from "@/lib/locales";
+import { LiveMarketSignals } from "@/components/LiveMarketSignals";
 
 export const Route = createFileRoute("/opportunities")({
   head: () => ({ meta: [{ title: "Opportunities · UNMAPPED" }] }),
@@ -24,8 +25,10 @@ function Opportunities() {
   const { profile, locale } = useApp();
   const navigate = useNavigate();
   const [matches, setMatches] = useState<OpportunityMatch[]>([]);
+  const [matchError, setMatchError] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const [providers, setProviders] = useState<TrainingProvider[]>([]);
+  const [providerError, setProviderError] = useState<string | null>(null);
   const [searching, setSearching] = useState(false);
 
   useEffect(() => {
@@ -33,15 +36,28 @@ function Opportunities() {
       navigate({ to: "/onboarding" });
       return;
     }
-    getOpportunities(profile, locale).then(setMatches);
-    searchProviders("", locale).then(setProviders);
+    getOpportunities(profile, locale)
+      .then(setMatches)
+      .catch((err: unknown) =>
+        setMatchError(err instanceof Error ? err.message : String(err)),
+      );
+    searchProviders("", locale)
+      .then(setProviders)
+      .catch((err: unknown) =>
+        setProviderError(err instanceof Error ? err.message : String(err)),
+      );
   }, [profile, locale, navigate]);
 
   async function runSearch(e: React.FormEvent) {
     e.preventDefault();
     setSearching(true);
-    const r = await searchProviders(query, locale);
-    setProviders(r);
+    try {
+      const r = await searchProviders(query, locale);
+      setProviders(r);
+      setProviderError(null);
+    } catch (err: unknown) {
+      setProviderError(err instanceof Error ? err.message : String(err));
+    }
     setSearching(false);
   }
 
@@ -72,6 +88,12 @@ function Opportunities() {
           <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
         </Link>
       </header>
+
+      {matchError && (
+        <div className="rounded-lg border border-signal-risk/30 bg-signal-risk-soft px-4 py-3 text-sm text-signal-risk font-mono">
+          Opportunities error: {matchError}
+        </div>
+      )}
 
       {/* Comparison terminal */}
       <section className="overflow-hidden rounded-2xl border border-hairline bg-card shadow-card">
@@ -182,6 +204,14 @@ function Opportunities() {
         </ul>
       </section>
 
+      {/* Live market intelligence — parallel agentic Tavily search */}
+      {profile.skills[0] && (
+        <LiveMarketSignals
+          skill={profile.skills[0].label}
+          location={profile.region}
+        />
+      )}
+
       {/* Provider search */}
       <section className="rounded-2xl border border-hairline bg-card p-6 shadow-card">
         <div className="flex flex-wrap items-center justify-between gap-2">
@@ -190,7 +220,7 @@ function Opportunities() {
           </h2>
           <span className="flex items-center gap-1.5 text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
             <span className="h-1.5 w-1.5 animate-pulse-dot rounded-full bg-signal-durable" />
-            Powered by Tavily · live search (mocked)
+            Powered by Tavily · live search
           </span>
         </div>
         <form onSubmit={runSearch} className="mt-4 flex gap-2">
@@ -218,7 +248,12 @@ function Opportunities() {
         </form>
 
         <ul className="mt-5 divide-y divide-hairline">
-          {providers.length === 0 && !searching && (
+          {providerError && (
+            <li className="py-4 text-sm font-mono text-signal-risk">
+              Provider search error: {providerError}
+            </li>
+          )}
+          {!providerError && providers.length === 0 && !searching && (
             <li className="py-6 text-center text-sm text-muted-foreground">
               No providers match "{query}".
             </li>
@@ -240,12 +275,20 @@ function Opportunities() {
                   </span>
                 </div>
               </div>
-              <a
-                href={p.url}
-                className="inline-flex shrink-0 items-center gap-1 rounded-full border border-hairline bg-background px-3 py-1.5 text-xs font-semibold text-foreground transition-colors hover:bg-muted"
-              >
-                View <ArrowRight className="h-3 w-3" />
-              </a>
+              {p.url ? (
+                <a
+                  href={p.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex shrink-0 items-center gap-1 rounded-full border border-hairline bg-background px-3 py-1.5 text-xs font-semibold text-foreground transition-colors hover:bg-muted"
+                >
+                  View <ArrowRight className="h-3 w-3" />
+                </a>
+              ) : (
+                <span className="shrink-0 rounded-full border border-hairline px-3 py-1.5 text-xs text-muted-foreground/50">
+                  No link
+                </span>
+              )}
             </li>
           ))}
         </ul>

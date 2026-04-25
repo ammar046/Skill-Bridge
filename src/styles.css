@@ -237,3 +237,13 @@
   animation: wave 0.9s ease-in-out infinite;
   transform-origin: center;
 }
+
+/* NarrativeInput mic button ripple */
+@keyframes ripple {
+  0%   { box-shadow: 0 0 0 0 color-mix(in srgb, currentColor 40%, transparent); }
+  70%  { box-shadow: 0 0 0 10px transparent; }
+  100% { box-shadow: 0 0 0 0 transparent; }
+}
+.ripple-active {
+  animation: ripple 1.2s ease-out infinite;
+}
