@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Info, ShieldCheck, AlertTriangle, Zap } from "lucide-react";
+import { Info, ShieldCheck, AlertTriangle, Zap, ChevronDown, ChevronRight } from "lucide-react";
 import type { Skill } from "@/types/api";
 
 // ILO Future of Work (2020) task-content index labels
@@ -66,10 +66,13 @@ function classificationRationale(skill: Skill, isDurable: boolean, foPercent: nu
 
 export function SkillBadge({ skill }: { skill: Skill }) {
   const [open, setOpen] = useState(false);
+  const [adjacentOpen, setAdjacentOpen] = useState(false);
   const isDurable = skill.classification === "durable";
   const isTransitioning = skill.classification === "transitioning";
   const foPercent = skill.freyOsborneScore != null ? Math.round(skill.freyOsborneScore * 100) : null;
   const ilo = getIloLabel(skill.iloTaskType);
+  const hasAdjacent = (skill.adjacentSkills?.length ?? 0) > 0;
+  const hasTavilyEvidence = skill.resilienceNote?.startsWith("Live evidence");
 
   const badgeColors = isDurable
     ? "border-signal-durable/40 bg-signal-durable-soft text-signal-durable"
@@ -205,13 +208,35 @@ export function SkillBadge({ skill }: { skill: Skill }) {
               {skill.resilienceNote && (
                 <div className="rounded-lg border border-hairline bg-muted/50 p-2.5">
                   <p className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">
-                    Live Evidence (Tavily web search · city-specific)
+                    {hasTavilyEvidence ? "Live Evidence (Tavily web search · city-specific)" : "Assessment Basis"}
                   </p>
                   <p className="mt-1 text-[10px] leading-snug text-foreground">
                     {skill.resilienceNote}
                   </p>
                 </div>
               )}
+
+              {/* Epistemic honesty — limitations */}
+              <div className="rounded-lg border border-amber-200 bg-amber-50 p-2.5">
+                <p className="text-[9px] font-semibold uppercase tracking-wider text-amber-700">
+                  ⚠ Limitations of this score
+                </p>
+                <p className="mt-1 text-[10px] leading-snug italic text-amber-800">
+                  {foPercent != null
+                    ? "This probability is derived from Frey & Osborne (2013) — a study of US occupations in a high-income context. An ILO (2019) LMIC calibration discount of 20% has been applied, but local task composition in your city may differ further. Treat this as directional, not definitive."
+                    : "Automation probability unavailable for this ISCO code. Classification is based on ILO task-content indices only."}
+                </p>
+                {!hasTavilyEvidence && (
+                  <p className="mt-1 text-[10px] leading-snug italic text-amber-800">
+                    No live city-specific data was found for this skill. The assessment above is based on the Oxford 2013 paper and ILO task indices only.
+                  </p>
+                )}
+                {hasTavilyEvidence && (
+                  <p className="mt-1 text-[10px] leading-snug italic text-amber-800">
+                    Job market evidence is sourced from a live web search conducted at the time of your assessment. Results reflect publicly available data and may not represent the full local market.
+                  </p>
+                )}
+              </div>
             </div>
 
             <button
@@ -222,6 +247,70 @@ export function SkillBadge({ skill }: { skill: Skill }) {
             </button>
           </div>
         </>
+      )}
+
+      {/* Adjacent skills — expandable resilience panel */}
+      {hasAdjacent && (
+        <div className="mt-2">
+          <button
+            type="button"
+            onClick={() => setAdjacentOpen((v) => !v)}
+            className="inline-flex items-center gap-1.5 rounded-full border border-teal-300/50 bg-teal-50 px-3 py-1 text-[10px] font-semibold text-teal-700 transition-colors hover:bg-teal-100"
+          >
+            {adjacentOpen ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
+            Build resilience
+          </button>
+
+          {adjacentOpen && (
+            <div className="mt-2 rounded-xl border border-teal-200 bg-teal-50/50 p-3">
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-teal-700">
+                Skills that would make you more resilient
+              </p>
+              <p className="mt-0.5 text-[9px] text-teal-600">
+                Source: Frey &amp; Osborne 2013 + ILO WESO 2020
+              </p>
+              <ul className="mt-2 space-y-2">
+                {skill.adjacentSkills!.map((adj) => {
+                  const currentPct = foPercent ?? 50;
+                  const targetPct = Math.max(5, currentPct - Math.round(adj.resilience_delta * 100));
+                  return (
+                    <li key={adj.isco_code} className="rounded-lg border border-teal-200 bg-white p-2.5">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <p className="text-[11px] font-semibold text-foreground">{adj.label}</p>
+                          <p className="text-[9px] text-muted-foreground">
+                            ISCO {adj.isco_code} · {adj.training_type} · {adj.estimated_weeks}w
+                          </p>
+                        </div>
+                        <span className="shrink-0 rounded-full bg-teal-100 px-2 py-0.5 text-[10px] font-bold text-teal-700">
+                          +{Math.round(adj.resilience_delta * 100)}% resilient
+                        </span>
+                      </div>
+                      {/* F-O progress arrow */}
+                      <div className="mt-2 flex items-center gap-1.5">
+                        <span className="num text-[9px] text-muted-foreground">{currentPct}%</span>
+                        <div className="relative flex-1 h-1.5 overflow-hidden rounded-full bg-muted">
+                          <div
+                            className="absolute left-0 h-full rounded-full bg-signal-risk"
+                            style={{ width: `${currentPct}%` }}
+                          />
+                          <div
+                            className="absolute left-0 h-full rounded-full bg-teal-500 opacity-70 transition-all duration-700"
+                            style={{ width: `${targetPct}%` }}
+                          />
+                        </div>
+                        <span className="num text-[9px] font-semibold text-teal-700">→ {targetPct}%</span>
+                      </div>
+                      <p className="mt-1 text-[9px] leading-snug text-muted-foreground italic">
+                        {adj.rationale}
+                      </p>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          )}
+        </div>
       )}
     </div>
   );

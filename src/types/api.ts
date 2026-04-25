@@ -4,29 +4,41 @@
 
 export type SkillClass = "durable" | "at_risk" | "transitioning";
 
+export interface AdjacentSkill {
+  isco_code: string;
+  label: string;
+  resilience_delta: number;
+  rationale: string;
+  training_type: string;
+  estimated_weeks: number;
+}
+
 export interface Skill {
   id: string;
-  label: string;            // plain Grade-6 language ("Business Ops")
-  formalName: string;       // ESCO/ISCO formal name
-  iscoCode: string;         // ISCO-08 e.g. "7421"
-  escoUri: string;          // ESCO concept URI
+  label: string;
+  formalName: string;
+  iscoCode: string;
+  escoUri: string;
   classification: SkillClass;
-  confidence: number;       // 0-1
-  sourceQuote: string;      // verbatim slice that produced this skill
-  freyOsborneScore?: number;      // 0-1 LMIC-adjusted automation probability
-  iloTaskType?: string;           // non_routine_cognitive | routine_cognitive | manual_physical | mixed
-  resilienceNote?: string;        // ILO/Frey-Osborne explanation
+  confidence: number;
+  sourceQuote: string;
+  freyOsborneScore?: number;
+  iloTaskType?: string;
+  resilienceNote?: string;
+  adjacentSkills?: AdjacentSkill[];
 }
 
 export interface UserProfile {
   id: string;
   name: string;
   age: number | null;
+  gender: "female" | "male" | "other" | null;
   region: string;
-  userCity: string;   // city extracted from narrative by Gemini
+  userCity: string;
   rawNarrative: string;
   skills: Skill[];
   createdAt: string;
+  passId?: string;
 }
 
 export interface ReadinessReport {
@@ -87,6 +99,7 @@ export interface PolicymakerLiveStats {
   wage_floor_local: IndicatorValue;
   wage_floor_usd_ppp: IndicatorValue;
   automation_delay_years: IndicatorValue;
+  gender_wage_gap: IndicatorValue;
   wittgenstein_note: string;
   wittgenstein_source: string;
   frey_osborne_calibration: string;

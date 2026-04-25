@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useLocation } from "@tanstack/react-router";
 import { Settings, ArrowUpRight } from "lucide-react";
 import {
@@ -14,9 +14,16 @@ import { useApp } from "@/context/AppContext";
 import { formatWage } from "@/lib/locales";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
-  const { locale, viewMode, profile } = useApp();
+  const { locale, viewMode, profile, uiLocale, setUiLocale } = useApp();
   const location = useLocation();
   const onAdmin = location.pathname.startsWith("/admin");
+  const isRtl = uiLocale === "ur";
+
+  // Apply RTL direction to document root
+  useEffect(() => {
+    document.documentElement.lang = isRtl ? "ur" : "en";
+    document.documentElement.dir = isRtl ? "rtl" : "ltr";
+  }, [isRtl]);
 
   const userNav = [
     { to: "/", label: "Home" },
@@ -77,6 +84,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               <span className="h-1.5 w-1.5 animate-pulse-dot rounded-full bg-signal-durable" />
               {locale.flag} {locale.country} · {viewMode === "user" ? "User" : "Policy"}
             </span>
+            <button
+              onClick={() => setUiLocale(uiLocale === "en" ? "ur" : "en")}
+              className="rounded-full border border-hairline bg-background px-2.5 py-1 text-[11px] font-medium text-muted-foreground transition-colors hover:bg-muted"
+              title="Toggle language / زبان تبدیل کریں"
+            >
+              {uiLocale === "en" ? "اردو" : "EN"}
+            </button>
             <DevSettings />
           </div>
         </div>

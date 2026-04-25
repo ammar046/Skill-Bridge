@@ -5,30 +5,27 @@ import { useApp } from "@/context/AppContext";
 import { buildProfile } from "@/lib/api";
 import { NarrativeInput } from "@/components/NarrativeInput";
 import { ProcessingOverlay, type Phase } from "@/components/ProcessingOverlay";
+import { t } from "@/lib/i18n";
 
 export const Route = createFileRoute("/onboarding")({
   head: () => ({ meta: [{ title: "Onboarding · UNMAPPED" }] }),
   component: Onboarding,
 });
 
-const STEPS = ["name", "age", "region", "narrative"] as const;
+const STEPS = ["name", "age", "gender", "region", "narrative"] as const;
 type Step = (typeof STEPS)[number];
 
-const QUESTIONS: Record<Step, { q: string; hint?: string }> = {
-  name: { q: "Hello! What should we call you?", hint: "We'll put this on your skills card." },
-  age: { q: "Nice to meet you. How old are you?" },
-  region: { q: "Where do you live or work?" },
-  narrative: {
-    q: "Tell us about your work — in your own words.",
-    hint: "Tap the mic to speak. Voice runs on-device, nothing uploaded.",
-  },
-};
-
 function Onboarding() {
-  const { locale, setProfile } = useApp();
+  const { locale, setProfile, uiLocale, setGender: setGlobalGender } = useApp();
   const navigate = useNavigate();
   const [step, setStep] = useState<Step>("name");
-  const [data, setData] = useState({ name: "", age: "", region: locale.region, narrative: "" });
+  const [data, setData] = useState({
+    name: "",
+    age: "",
+    gender: "" as "female" | "male" | "other" | "",
+    region: locale.region,
+    narrative: "",
+  });
   const [phase, setPhase] = useState<Phase>({ status: "idle" });
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -40,6 +37,7 @@ function Onboarding() {
   const canNext =
     (step === "name" && data.name.trim().length > 1) ||
     (step === "age" && /^\d{1,2}$/.test(data.age)) ||
+    step === "gender" ||  // always skippable
     (step === "region" && data.region.trim().length > 0) ||
     (step === "narrative" && data.narrative.trim().length > 10);
 
@@ -72,11 +70,14 @@ function Onboarding() {
     scrollBottom();
 
     try {
-      // Phase 1 — Gemini extraction
+      const gender = data.gender || null;
+      if (gender) setGlobalGender(gender);
+
       const profile = await buildProfile(
         {
           name: data.name.trim(),
           age: data.age ? parseInt(data.age, 10) : null,
+          gender: gender as "female" | "male" | "other" | null,
           region: data.region.trim(),
           narrative: data.narrative.trim(),
         },
@@ -113,6 +114,17 @@ function Onboarding() {
     }
   }
 
+  const STEP_QUESTIONS: Record<Step, { q: string; hint?: string }> = {
+    name: { q: t("onboarding.tell_us_your_name", uiLocale), hint: t("onboarding.name_hint", uiLocale) },
+    age: { q: t("onboarding.how_old_are_you", uiLocale) },
+    gender: { q: t("onboarding.your_gender", uiLocale), hint: t("onboarding.gender_hint", uiLocale) },
+    region: { q: t("onboarding.which_city", uiLocale) },
+    narrative: {
+      q: t("onboarding.describe_your_work", uiLocale),
+      hint: t("onboarding.narrative_hint", uiLocale),
+    },
+  };
+
   const userBubbles = STEPS.slice(0, idx).map((s) => ({
     step: s,
     value:
@@ -120,9 +132,13 @@ function Onboarding() {
         ? data.name
         : s === "age"
           ? data.age
-          : s === "region"
-            ? data.region
-            : data.narrative,
+          : s === "gender"
+            ? data.gender
+              ? { female: t("common.woman", uiLocale), male: t("common.man", uiLocale), other: t("common.non_binary", uiLocale) }[data.gender]
+              : `(${t("onboarding.skip", uiLocale)})`
+            : s === "region"
+              ? data.region
+              : data.narrative,
   }));
 
   return (
@@ -146,15 +162,14 @@ function Onboarding() {
       >
         <Bubble side="agent">
           <p className="display text-base text-foreground">
-            Welcome to <span className="font-semibold">UNMAPPED</span>. I'll ask four
-            short questions, then build your portable skills profile.
+            {t("onboarding.welcome", uiLocale)}
           </p>
         </Bubble>
 
         {userBubbles.map(({ step: s, value }) => (
           <div key={s} className="space-y-3 animate-fade-up">
             <Bubble side="agent">
-              <p className="text-sm text-foreground">{QUESTIONS[s].q}</p>
+              <p className="text-sm text-foreground">{STEP_QUESTIONS[s].q}</p>
             </Bubble>
             <Bubble side="user">
               <p className="text-sm">{value}</p>
@@ -166,9 +181,9 @@ function Onboarding() {
         {phase.status === "idle" && (
           <div className="space-y-3 animate-fade-up">
             <Bubble side="agent">
-              <p className="display text-lg text-foreground">{QUESTIONS[step].q}</p>
-              {QUESTIONS[step].hint && (
-                <p className="mt-1 text-xs text-muted-foreground">{QUESTIONS[step].hint}</p>
+              <p className="display text-lg text-foreground">{STEP_QUESTIONS[step].q}</p>
+              {STEP_QUESTIONS[step].hint && (
+                <p className="mt-1 text-xs text-muted-foreground">{STEP_QUESTIONS[step].hint}</p>
               )}
             </Bubble>
 
@@ -194,6 +209,25 @@ function Onboarding() {
                   placeholder="22"
                   className="num w-32 bg-transparent text-2xl font-semibold outline-none placeholder:text-foreground/40"
                 />
+              )}
+              {step === "gender" && (
+                <div className="flex flex-wrap gap-2">
+                  {(["female", "male", "other"] as const).map((g) => (
+                    <button
+                      key={g}
+                      type="button"
+                      onClick={() => setData({ ...data, gender: g })}
+                      className={
+                        "rounded-full border px-4 py-2 text-sm font-medium transition-all " +
+                        (data.gender === g
+                          ? "border-foreground bg-foreground text-background"
+                          : "border-hairline bg-background text-foreground hover:bg-muted")
+                      }
+                    >
+                      {{ female: t("common.woman", uiLocale), male: t("common.man", uiLocale), other: t("common.non_binary", uiLocale) }[g]}
+                    </button>
+                  ))}
+                </div>
               )}
               {step === "region" && (
                 <input
@@ -237,30 +271,40 @@ function Onboarding() {
           className="inline-flex items-center gap-1 text-sm text-muted-foreground transition-colors hover:text-foreground disabled:opacity-30"
         >
           <ArrowLeft className="h-4 w-4" />
-          {phase.status === "error" ? "Try again" : "Back"}
+          {phase.status === "error" ? t("onboarding.back", uiLocale) : t("onboarding.back", uiLocale)}
         </button>
 
-        <button
-          onClick={next}
-          disabled={(!canNext && phase.status === "idle") || isProcessing}
-          className="group inline-flex items-center gap-2 rounded-full bg-foreground px-6 py-3 text-sm font-semibold text-background shadow-lift transition-all hover:translate-y-[-1px] disabled:translate-y-0 disabled:opacity-40 disabled:shadow-none"
-        >
-          {isProcessing ? (
-            <span className="flex items-center gap-2">
-              <span className="h-2 w-2 animate-pulse-dot rounded-full bg-background" />
-              Processing…
-            </span>
-          ) : idx === STEPS.length - 1 ? (
-            <>
-              Build my profile <Check className="h-4 w-4" />
-            </>
-          ) : (
-            <>
-              Continue{" "}
-              <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
-            </>
+        <div className="flex items-center gap-2">
+          {step === "gender" && (
+            <button
+              onClick={next}
+              className="text-sm text-muted-foreground underline underline-offset-2 hover:text-foreground"
+            >
+              {t("onboarding.skip", uiLocale)}
+            </button>
           )}
-        </button>
+          <button
+            onClick={next}
+            disabled={(!canNext && phase.status === "idle") || isProcessing}
+            className="group inline-flex items-center gap-2 rounded-full bg-foreground px-6 py-3 text-sm font-semibold text-background shadow-lift transition-all hover:translate-y-[-1px] disabled:translate-y-0 disabled:opacity-40 disabled:shadow-none"
+          >
+            {isProcessing ? (
+              <span className="flex items-center gap-2">
+                <span className="h-2 w-2 animate-pulse-dot rounded-full bg-background" />
+                {t("common.processing", uiLocale)}
+              </span>
+            ) : idx === STEPS.length - 1 ? (
+              <>
+                {t("onboarding.build_profile", uiLocale)} <Check className="h-4 w-4" />
+              </>
+            ) : (
+              <>
+                {t("onboarding.next", uiLocale)}{" "}
+                <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+              </>
+            )}
+          </button>
+        </div>
       </div>
     </div>
   );

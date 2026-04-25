@@ -59,6 +59,12 @@
       "gdp_per_capita_usd_ppp": 6420
     },
 
+    "gender_wage_gap": {
+      "gap_pct": 0.18,
+      "source": "ILO Global Wage Report 2024",
+      "note": "Women in Ghana earn approximately 18% less than men in comparable informal economy roles."
+    },
+
     "wittgenstein_projections": {
       "source": "Wittgenstein Centre for Demography 2025-2035",
       "scenario": "SSP2 Medium",
@@ -66,6 +72,10 @@
       "demand_growth_high_skill_pct_yr": 4.1,
       "demand_growth_mid_skill_pct_yr": 2.3,
       "tvet_supply_gap_pct": 78,
+      "secondary_enrollment_2025": 74.1,
+      "secondary_enrollment_2030": 79.3,
+      "secondary_enrollment_2035": 84.6,
+      "narrative": "Secondary enrollment in Ghana is projected to rise ~11 percentage points by 2035, increasing competition for mid-skill formal roles. Workers without documented credentials will face growing disadvantage.",
       "note": "IoT-adjacent and solar-tech demand grows 4.1%/yr through 2035 in Greater Accra; current TVET supply meets ~22% of demand."
     },
 
@@ -149,6 +159,12 @@
       "gdp_per_capita_usd_ppp": 5580
     },
 
+    "gender_wage_gap": {
+      "gap_pct": 0.34,
+      "source": "ILO Global Wage Report 2024",
+      "note": "Women in Pakistan earn approximately 34% less than men in comparable roles, one of the largest gender wage gaps in South Asia."
+    },
+
     "wittgenstein_projections": {
       "source": "Wittgenstein Centre for Demography 2025-2035",
       "scenario": "SSP2 Medium",
@@ -156,6 +172,10 @@
       "demand_growth_high_skill_pct_yr": 3.4,
       "demand_growth_mid_skill_pct_yr": 2.1,
       "tvet_supply_gap_pct": 82,
+      "secondary_enrollment_2025": 47.8,
+      "secondary_enrollment_2030": 54.2,
+      "secondary_enrollment_2035": 61.5,
+      "narrative": "Secondary enrollment in Pakistan is projected to rise ~14 percentage points by 2035 under SSP2. More credentialed workers entering the market makes undocumented skills harder to prove without a formal record.",
       "note": "Solar-installation demand grows 5.7%/yr in Punjab through 2035; current NAVTTC throughput covers 18% of projected need."
     },
 

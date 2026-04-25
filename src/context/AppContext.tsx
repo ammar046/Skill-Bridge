@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { LOCALES, type CountryCode, type Locale } from "@/lib/locales";
+import type { UILocale } from "@/lib/i18n";
 import type { UserProfile } from "@/types/api";
 
 type ViewMode = "user" | "admin";
@@ -13,6 +14,10 @@ interface AppContextValue {
   profile: UserProfile | null;
   setProfile: (p: UserProfile | null) => void;
   resetAll: () => void;
+  uiLocale: UILocale;
+  setUiLocale: (l: UILocale) => void;
+  gender: "female" | "male" | "other" | null;
+  setGender: (g: "female" | "male" | "other" | null) => void;
 }
 
 const Ctx = createContext<AppContextValue | null>(null);
@@ -21,6 +26,8 @@ const LS_KEYS = {
   country: "unmapped.country",
   view: "unmapped.view",
   profile: "unmapped.profile",
+  uiLocale: "unmapped.uiLocale",
+  gender: "unmapped.gender",
 };
 
 function readLS<T>(key: string, fallback: T): T {
@@ -37,19 +44,30 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [countryCode, setCountryCodeState] = useState<CountryCode>("GH");
   const [viewMode, setViewModeState] = useState<ViewMode>("user");
   const [profile, setProfileState] = useState<UserProfile | null>(null);
+  const [uiLocaleState, setUiLocaleState] = useState<UILocale>("en");
+  const [gender, setGenderState] = useState<"female" | "male" | "other" | null>(null);
   const [hydrated, setHydrated] = useState(false);
 
-  // Hydrate after mount to avoid SSR mismatch
   useEffect(() => {
-    setCountryCodeState(readLS<CountryCode>(LS_KEYS.country, "GH"));
+    const country = readLS<CountryCode>(LS_KEYS.country, "GH");
+    setCountryCodeState(country);
     setViewModeState(readLS<ViewMode>(LS_KEYS.view, "user"));
     setProfileState(readLS<UserProfile | null>(LS_KEYS.profile, null));
+    setGenderState(readLS<"female" | "male" | "other" | null>(LS_KEYS.gender, null));
+    // Default uiLocale to 'ur' for Pakistan unless manually overridden
+    const savedLocale = readLS<UILocale | null>(LS_KEYS.uiLocale, null);
+    setUiLocaleState(savedLocale ?? (country === "PK" ? "ur" : "en"));
     setHydrated(true);
   }, []);
 
   const setCountry = useCallback((c: CountryCode) => {
     setCountryCodeState(c);
     if (typeof window !== "undefined") localStorage.setItem(LS_KEYS.country, JSON.stringify(c));
+    // Auto-switch UI language when country changes (unless manually set)
+    const savedLocale = readLS<UILocale | null>(LS_KEYS.uiLocale, null);
+    if (!savedLocale) {
+      setUiLocaleState(c === "PK" ? "ur" : "en");
+    }
   }, []);
   const setViewMode = useCallback((v: ViewMode) => {
     setViewModeState(v);
@@ -62,10 +80,19 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       else localStorage.removeItem(LS_KEYS.profile);
     }
   }, []);
+  const setUiLocale = useCallback((l: UILocale) => {
+    setUiLocaleState(l);
+    if (typeof window !== "undefined") localStorage.setItem(LS_KEYS.uiLocale, JSON.stringify(l));
+  }, []);
+  const setGender = useCallback((g: "female" | "male" | "other" | null) => {
+    setGenderState(g);
+    if (typeof window !== "undefined") localStorage.setItem(LS_KEYS.gender, JSON.stringify(g));
+  }, []);
   const resetAll = useCallback(() => {
     setProfile(null);
     setViewMode("user");
-  }, [setProfile, setViewMode]);
+    setGender(null);
+  }, [setProfile, setViewMode, setGender]);
 
   const value = useMemo<AppContextValue>(() => ({
     locale: LOCALES[countryCode],
@@ -76,7 +103,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     profile,
     setProfile,
     resetAll,
-  }), [countryCode, viewMode, profile, setCountry, setViewMode, setProfile, resetAll]);
+    uiLocale: uiLocaleState,
+    setUiLocale,
+    gender,
+    setGender,
+  }), [countryCode, viewMode, profile, uiLocaleState, gender, setCountry, setViewMode, setProfile, resetAll, setUiLocale, setGender]);
 
   // Avoid hydration flicker by rendering a stable shell first
   if (!hydrated) {

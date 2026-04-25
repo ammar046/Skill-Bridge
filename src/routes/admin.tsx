@@ -118,6 +118,15 @@ function PolicymakerDashboard() {
           accent="durable"
           icon={<Zap className="h-4 w-4" />}
         />
+        {stats.gender_wage_gap?.available && (
+          <LiveKpi
+            label="Gender Wage Gap"
+            indicator={stats.gender_wage_gap}
+            format={(v) => `${v.toFixed(1)}% less for women`}
+            accent="risk"
+            icon={<Users className="h-4 w-4" />}
+          />
+        )}
       </div>
 
       {/* Growth sectors + district map */}

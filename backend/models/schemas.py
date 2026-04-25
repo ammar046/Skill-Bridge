@@ -6,6 +6,17 @@ class UserNarrativeRequest(BaseModel):
     narrative: str = Field(min_length=1)
     locale: str = Field(min_length=2, max_length=10)
     region: str = ""  # user's explicitly entered city/region — overrides Gemini city extraction
+    worker_name: str = ""  # used for pass_id generation
+    gender: str = ""  # 'female' | 'male' | 'other' | '' (empty = not provided)
+
+
+class AdjacentSkill(BaseModel):
+    isco_code: str = ""
+    label: str = ""
+    resilience_delta: float = 0.0
+    rationale: str = ""
+    training_type: str = ""
+    estimated_weeks: int = 0
 
 
 class ExtractedSkill(BaseModel):
@@ -16,6 +27,7 @@ class ExtractedSkill(BaseModel):
     frey_osborne_score: float = Field(default=0.3, ge=0.0, le=1.0)
     ilo_task_type: str = "mixed"
     resilience_note: str = ""
+    adjacent_skills: list[AdjacentSkill] = []
 
 
 class OpportunityMatch(BaseModel):
@@ -25,6 +37,8 @@ class OpportunityMatch(BaseModel):
     match_strength: int = Field(ge=0, le=100)
     ilostat_source: str = "ILOSTAT 2024"
     returns_to_education_note: str = ""
+    gender_adjusted_wage_floor: str = ""
+    gender_note: str = ""
 
 
 class TrainingProvider(BaseModel):
@@ -38,7 +52,8 @@ class TrainingProvider(BaseModel):
 class ProfileResponse(BaseModel):
     user_skills: list[ExtractedSkill]
     matches: list[OpportunityMatch]
-    user_city: str = ""  # extracted from narrative by Gemini; used for city-specific Tavily enrichment
+    user_city: str = ""
+    pass_id: str = ""  # SHA-256 credential identifier for QR verification
 
 
 class OpportunitySearchRequest(BaseModel):
@@ -101,6 +116,7 @@ class PolicymakerLiveStats(BaseModel):
     wage_floor_local: IndicatorValue
     wage_floor_usd_ppp: IndicatorValue
     automation_delay_years: IndicatorValue
+    gender_wage_gap: IndicatorValue  # ILO Global Wage Report 2024
 
     # Wittgenstein + Frey-Osborne
     wittgenstein_note: str

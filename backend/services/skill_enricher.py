@@ -27,7 +27,8 @@ except ImportError:
     _TAVILY_OK = False
 
 try:
-    from ..models.schemas import ExtractedSkill, OpportunityMatch, ProfileResponse
+    from ..models.schemas import AdjacentSkill, ExtractedSkill, OpportunityMatch, ProfileResponse
+    from ..services.adjacency_engine import get_adjacent_skills
     from ..services.frey_osborne import (
         classify,
         get_fo_score,
@@ -36,7 +37,8 @@ try:
     )
     from ..services.institutional_data import get_automation_itu_context
 except (ImportError, ModuleNotFoundError):
-    from models.schemas import ExtractedSkill, OpportunityMatch, ProfileResponse
+    from models.schemas import AdjacentSkill, ExtractedSkill, OpportunityMatch, ProfileResponse
+    from services.adjacency_engine import get_adjacent_skills
     from services.frey_osborne import classify, get_fo_score, get_ilo_task_label, get_ilo_task_type
     from services.institutional_data import get_automation_itu_context
 
@@ -154,6 +156,20 @@ def _enrich_single_skill(
     # Step 5 — Re-derive status from actual score
     status = classify(fo_lmic, medium_threshold, high_threshold)
 
+    # Step 6 — Adjacent skills for resilience guidance
+    raw_adjacent = get_adjacent_skills(skill.isco_code, fo_lmic)
+    adjacent = [
+        AdjacentSkill(
+            isco_code=a.get("isco_code", ""),
+            label=a.get("label", ""),
+            resilience_delta=a.get("resilience_delta", 0.0),
+            rationale=a.get("rationale", ""),
+            training_type=a.get("training_type", ""),
+            estimated_weeks=a.get("estimated_weeks", 0),
+        )
+        for a in raw_adjacent
+    ]
+
     return ExtractedSkill(
         label=skill.label,
         isco_code=skill.isco_code,
@@ -162,6 +178,7 @@ def _enrich_single_skill(
         frey_osborne_score=fo_lmic,
         ilo_task_type=ilo_type,
         resilience_note=note,
+        adjacent_skills=adjacent,
     )
 
 

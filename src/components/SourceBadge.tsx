@@ -8,13 +8,19 @@ interface SourceBadgeProps {
   compact?: boolean;
 }
 
+const PUBLISHED_TOOLTIP =
+  "This indicator is sourced from a published report baseline and may not reflect the most current conditions. Live indicators (marked with a wifi icon) are fetched in real time from World Bank WDI or ILOSTAT APIs.";
+
 export function SourceBadge({ source, live = false, year, compact = false }: SourceBadgeProps) {
   if (compact) {
+    const titleText = live
+      ? `Live — Source: ${source}${year ? ` (${year})` : ""}`
+      : `Published baseline — ${PUBLISHED_TOOLTIP}\n\nSource: ${source}${year ? ` (${year})` : ""}`;
     return (
       <span
-        title={`Source: ${source}${year ? ` (${year})` : ""}`}
+        title={titleText}
         className={
-          "inline-flex items-center gap-1 rounded-full border px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-[0.1em] " +
+          "inline-flex items-center gap-1 rounded-full border px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-[0.1em] cursor-help " +
           (live
             ? "border-signal-durable/30 bg-signal-durable-soft text-signal-durable"
             : "border-hairline bg-muted text-muted-foreground")

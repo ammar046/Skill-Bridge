@@ -1,9 +1,10 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
-import { ArrowRight, Quote, Sparkles } from "lucide-react";
+import { ArrowRight, Quote, Sparkles, AlertCircle } from "lucide-react";
 import { useApp } from "@/context/AppContext";
 import { SignalPill } from "@/components/SignalPill";
 import { SkillBadge } from "@/components/SkillBadge";
+import { t } from "@/lib/i18n";
 import type { Skill } from "@/types/api";
 
 export const Route = createFileRoute("/profile")({
@@ -12,7 +13,7 @@ export const Route = createFileRoute("/profile")({
 });
 
 function Profile() {
-  const { profile, locale } = useApp();
+  const { profile, locale, uiLocale, gender: ctxGender } = useApp();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -27,8 +28,33 @@ function Profile() {
     (profile.skills.reduce((a, s) => a + s.confidence, 0) / profile.skills.length) * 100,
   );
 
+  const isFemale = (profile.gender ?? ctxGender) === "female";
+  const gapPct = Math.round(locale.genderWageGap * 100);
+  const witt = locale.wittgensteinProjections;
+
+  const wittPoints = [
+    { year: "2025", value: witt.secondary_enrollment_2025 },
+    { year: "2030", value: witt.secondary_enrollment_2030 },
+    { year: "2035", value: witt.secondary_enrollment_2035 },
+  ];
+  const wittMax = Math.max(...wittPoints.map((p) => p.value), 100);
+
   return (
     <div className="space-y-10 py-2">
+
+      {/* Global disclaimer banner */}
+      <div
+        className="rounded-lg border-l-2 border-muted-foreground/30 bg-muted/40 px-4 py-3 text-[13px] text-muted-foreground"
+        role="note"
+      >
+        <span className="flex items-start gap-2">
+          <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground/70" />
+          <span>
+            Skills classifications use ILO ISCO-08. Automation scores are derived from Frey &amp; Osborne (2013), calibrated for low- and middle-income economies per ILO (2019). Wage data is from ILO Global Wage Report 2024 and ILOSTAT. All scores are indicative.
+          </span>
+        </span>
+      </div>
+
       <header className="flex flex-wrap items-end justify-between gap-6 border-b border-hairline pb-8">
         <div className="animate-fade-up">
           <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">
@@ -51,17 +77,31 @@ function Profile() {
         </Link>
       </header>
 
+      {/* Gender wage callout */}
+      {isFemale && (
+        <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          <p className="font-semibold text-amber-900">Gender wage adjustment applied</p>
+          <p className="mt-1 text-[13px]">
+            Wage floor shown is ILO-adjusted for gender. Women in {locale.country} earn approximately{" "}
+            <strong>{gapPct}% less</strong> than the regional average.{" "}
+            <span className="inline-flex items-center gap-1 rounded border border-amber-300 bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-amber-700">
+              Source: {locale.genderWageGapSource}
+            </span>
+          </p>
+        </div>
+      )}
+
       <section className="grid grid-cols-2 gap-3 md:grid-cols-4">
-        <Stat label="Skills mapped" value={profile.skills.length.toString()} />
-        <Stat label="Durable" value={durable.toString()} accent="durable" />
-        <Stat label="At risk" value={atRisk.toString()} accent="risk" />
-        <Stat label="Avg confidence" value={`${avgConf}%`} />
+        <Stat label={t("profile.skills_mapped", uiLocale)} value={profile.skills.length.toString()} />
+        <Stat label={t("profile.durable", uiLocale)} value={durable.toString()} accent="durable" />
+        <Stat label={t("profile.at_risk", uiLocale)} value={atRisk.toString()} accent="risk" />
+        <Stat label={t("profile.avg_confidence", uiLocale)} value={`${avgConf}%`} />
       </section>
 
       <section>
         <div className="mb-4 flex items-center justify-between">
           <h2 className="display text-2xl font-semibold tracking-tight">
-            Validated skills
+            {t("profile.validated_skills", uiLocale)}
           </h2>
           <p className="flex items-center gap-1.5 text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
             <Sparkles className="h-3 w-3" /> Signal Engine v0.1
@@ -74,10 +114,50 @@ function Profile() {
         </ul>
       </section>
 
+      {/* Wittgenstein projections — "Your region's future" */}
+      <section className="rounded-2xl border border-hairline bg-paper p-6">
+        <h2 className="text-[10px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">
+          Your region's future
+        </h2>
+        <p className="display mt-2 text-xl font-semibold tracking-tight text-foreground">
+          Secondary education enrollment projections
+        </p>
+
+        {/* Inline enrollment bar chart */}
+        <div className="mt-4 flex items-end gap-4">
+          {wittPoints.map((p) => {
+            const heightPct = Math.round((p.value / wittMax) * 100);
+            return (
+              <div key={p.year} className="flex flex-1 flex-col items-center gap-1">
+                <span className="num text-sm font-semibold text-foreground">{p.value}%</span>
+                <div className="w-full overflow-hidden rounded-t-md bg-muted" style={{ height: "72px" }}>
+                  <div
+                    className="ml-auto mr-auto w-full rounded-t-md bg-foreground/70 transition-all duration-700"
+                    style={{ height: `${heightPct}%`, marginTop: `${100 - heightPct}%` }}
+                  />
+                </div>
+                <span className="num text-[10px] text-muted-foreground">{p.year}</span>
+              </div>
+            );
+          })}
+        </div>
+
+        <p className="mt-4 text-sm leading-relaxed text-foreground">{witt.narrative}</p>
+
+        <div className="mt-3 flex flex-wrap items-center gap-3">
+          <span className="inline-flex items-center gap-1 rounded border border-hairline bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
+            Source: {witt.source}
+          </span>
+          <p className="text-[13px] text-muted-foreground">
+            More workers with credentials means your undocumented skills matter more now. A Bridge Pass helps you stand out.
+          </p>
+        </div>
+      </section>
+
       {/* Raw narrative provenance */}
       <section className="rounded-2xl border border-hairline bg-paper p-6">
         <h2 className="text-[10px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">
-          Source narrative
+          {t("profile.source_narrative", uiLocale)}
         </h2>
         <p className="display mt-3 text-lg leading-relaxed text-foreground text-pretty">
           "{profile.rawNarrative}"

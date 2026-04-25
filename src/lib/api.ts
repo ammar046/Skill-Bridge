@@ -56,6 +56,15 @@ export async function postWithTimeout<T>(
 
 // ─── Type helpers ────────────────────────────────────────────────────────────
 
+type BackendAdjacentSkill = {
+  isco_code: string;
+  label: string;
+  resilience_delta: number;
+  rationale: string;
+  training_type: string;
+  estimated_weeks: number;
+};
+
 type BackendExtractedSkill = {
   label: string;
   isco_code: string;
@@ -64,6 +73,7 @@ type BackendExtractedSkill = {
   frey_osborne_score?: number;
   ilo_task_type?: string;
   resilience_note?: string;
+  adjacent_skills?: BackendAdjacentSkill[];
 };
 
 type BackendOpportunityMatch = {
@@ -73,12 +83,15 @@ type BackendOpportunityMatch = {
   match_strength: number;
   ilostat_source?: string;
   returns_to_education_note?: string;
+  gender_adjusted_wage_floor?: string;
+  gender_note?: string;
 };
 
 type BackendProfileResponse = {
   user_skills: BackendExtractedSkill[];
   matches: BackendOpportunityMatch[];
   user_city: string;
+  pass_id?: string;
 };
 
 type BackendTrainingProvider = {
@@ -110,14 +123,22 @@ function normalizeSkillStatus(status: string): "durable" | "at_risk" {
 // ─── Public API functions ────────────────────────────────────────────────────
 
 export async function buildProfile(
-  input: { name: string; age: number | null; region: string; narrative: string },
+  input: {
+    name: string;
+    age: number | null;
+    gender: "female" | "male" | "other" | null;
+    region: string;
+    narrative: string;
+  },
   locale: Locale,
 ): Promise<UserProfile> {
   const apiData = await postWithTimeout<BackendProfileResponse>("/api/extract", {
     narrative: input.narrative,
     locale: localeCode(locale),
-    region: input.region,  // user's entered city — authoritative over Gemini extraction
-  }, 90000); // 90s — Gemini + parallel Tavily enrichment per skill
+    region: input.region,
+    worker_name: input.name,
+    gender: input.gender ?? "",
+  }, 90000);
 
   const skills = apiData.user_skills.map((skill, idx) => ({
     id: `sk_${idx}_${Date.now().toString(36)}`,
@@ -131,17 +152,20 @@ export async function buildProfile(
     freyOsborneScore: skill.frey_osborne_score,
     iloTaskType: skill.ilo_task_type,
     resilienceNote: skill.resilience_note,
+    adjacentSkills: skill.adjacent_skills ?? [],
   }));
 
   return {
     id: `usr_${Date.now().toString(36)}`,
     name: input.name,
     age: input.age,
+    gender: input.gender,
     region: input.region,
     userCity: apiData.user_city || input.region,
     rawNarrative: input.narrative,
     skills,
     createdAt: new Date().toISOString(),
+    passId: apiData.pass_id,
   };
 }
 

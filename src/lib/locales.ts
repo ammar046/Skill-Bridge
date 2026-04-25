@@ -16,6 +16,14 @@ export interface DistrictHeat {
   gap: number; // 0-100, higher = bigger skill gap
 }
 
+export interface WittgensteinProjections {
+  secondary_enrollment_2025: number;
+  secondary_enrollment_2030: number;
+  secondary_enrollment_2035: number;
+  narrative: string;
+  source: string;
+}
+
 export interface Locale {
   code: CountryCode;
   flag: string;
@@ -27,18 +35,22 @@ export interface Locale {
   sampleWageFloor: number;
   /** Source string for the wage floor value. */
   wageFloorSource: string;
-  region: string; // user's region label
-  educationTaxonomy: string; // local taxonomy name
+  /** ILO Global Wage Report 2024 gender wage gap (fraction, e.g. 0.18 = 18%). */
+  genderWageGap: number;
+  genderWageGapSource: string;
+  region: string;
+  educationTaxonomy: string;
   districts: DistrictHeat[];
   heroNarrativeSample: string;
   smsSenderId: string;
   policymakerStats: {
-    neetRate: number;             // % — World Bank WDI / ILO modelled
-    hciScore: number;             // 0-1 — World Bank Human Capital Index 2024
-    enrollment: number;           // % gross secondary — World Bank WDI / UNESCO
-    returnsToVocational: number;  // % wage premium — World Bank STEP 2023
+    neetRate: number;
+    hciScore: number;
+    enrollment: number;
+    returnsToVocational: number;
   };
   policyInsights: string[];
+  wittgensteinProjections: WittgensteinProjections;
 }
 
 export const LOCALES: Record<CountryCode, Locale> = {
@@ -51,6 +63,8 @@ export const LOCALES: Record<CountryCode, Locale> = {
     currencySymbol: "₵",
     sampleWageFloor: 1850,
     wageFloorSource: "ILO Global Wage Report 2024 · ILOSTAT minimum wage tables (Ghana)",
+    genderWageGap: 0.18,
+    genderWageGapSource: "ILO Global Wage Report 2024",
     region: "Greater Accra",
     educationTaxonomy: "NVTI / CTVET",
     districts: [
@@ -76,6 +90,13 @@ export const LOCALES: Record<CountryCode, Locale> = {
       "Phone-repair informal labour overlaps 71% with ESCO 7421 — recognising prior learning could formalise ~12,400 youth in 18 months.",
       "Wittgenstein projections suggest IoT-adjacent demand grows 4.1%/yr through 2035 in Greater Accra; current TVET supply meets ~22%.",
     ],
+    wittgensteinProjections: {
+      secondary_enrollment_2025: 74.1,
+      secondary_enrollment_2030: 79.3,
+      secondary_enrollment_2035: 84.6,
+      narrative: "Secondary enrollment in Ghana is projected to rise ~11 percentage points by 2035, increasing competition for mid-skill formal roles. Workers without documented credentials will face growing disadvantage.",
+      source: "Wittgenstein Centre SSP2 2025–2035",
+    },
   },
   PK: {
     code: "PK",
@@ -86,6 +107,8 @@ export const LOCALES: Record<CountryCode, Locale> = {
     currencySymbol: "₨",
     sampleWageFloor: 37000,
     wageFloorSource: "ILO Global Wage Report 2024 · ILOSTAT minimum wage tables (Pakistan)",
+    genderWageGap: 0.34,
+    genderWageGapSource: "ILO Global Wage Report 2024",
     region: "Punjab",
     educationTaxonomy: "NAVTTC / TEVTA",
     districts: [
@@ -111,6 +134,13 @@ export const LOCALES: Record<CountryCode, Locale> = {
       "Informal mobile-repair workforce maps to ESCO 7421 with 68% confidence — RPL pathways exist but uptake is <4%.",
       "Wittgenstein 2025-2035 model: solar-installation demand grows 5.7%/yr in Punjab; current NAVTTC throughput covers 18%.",
     ],
+    wittgensteinProjections: {
+      secondary_enrollment_2025: 47.8,
+      secondary_enrollment_2030: 54.2,
+      secondary_enrollment_2035: 61.5,
+      narrative: "Secondary enrollment in Pakistan is projected to rise ~14 percentage points by 2035 under SSP2. More credentialed workers entering the market makes undocumented skills harder to prove without a formal record.",
+      source: "Wittgenstein Centre SSP2 2025–2035",
+    },
   },
 };
 
