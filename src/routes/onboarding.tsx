@@ -62,7 +62,11 @@ function Onboarding() {
       setPhase({ status: "idle" });
       return;
     }
-    if (idx > 0) setStep(STEPS[idx - 1]);
+    if (idx > 0) {
+      setStep(STEPS[idx - 1]);
+    } else {
+      navigate({ to: "/" });
+    }
   }
 
   async function submit() {

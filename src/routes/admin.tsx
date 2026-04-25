@@ -1,8 +1,8 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import {
   TrendingUp, Users, BookOpen, AlertCircle, Globe,
-  BarChart3, Lightbulb, Shield, Wifi, Database, Zap,
+  BarChart3, Lightbulb, Shield, Wifi, Database, Zap, ArrowLeft,
 } from "lucide-react";
 import { useApp } from "@/context/AppContext";
 import { getPolicymakerStats } from "@/lib/api";
@@ -38,6 +38,15 @@ function PolicymakerDashboard() {
 
   return (
     <div className="mx-auto max-w-5xl space-y-8 py-2">
+
+      {/* Back nav */}
+      <Link
+        to="/"
+        className="inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
+      >
+        <ArrowLeft className="h-4 w-4" />
+        Home
+      </Link>
 
       {/* Header */}
       <div className="flex flex-wrap items-start justify-between gap-4 border-b border-hairline pb-6">

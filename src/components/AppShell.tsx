@@ -102,7 +102,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <Ticker />
       </header>
 
-      <main className="mx-auto max-w-6xl px-4 py-6 md:py-10">{children}</main>
+      <main className="mx-auto max-w-6xl px-4 py-6 pb-24 md:py-10 md:pb-10">{children}</main>
+
+      {/* Mobile bottom navigation — visible only on small screens, not on admin */}
+      {!onAdmin && <MobileNav profile={profile} />}
 
       <footer className="border-t border-hairline bg-paper">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-6 text-xs text-muted-foreground">
@@ -116,6 +119,45 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </div>
       </footer>
     </div>
+  );
+}
+
+function MobileNav({ profile }: { profile: ReturnType<typeof useApp>["profile"] }) {
+  const location = useLocation();
+  const tabs = [
+    { to: "/", label: "Home", icon: "🏠" },
+    { to: profile ? "/profile" : "/onboarding", label: profile ? "Profile" : "Start", icon: "👤" },
+    { to: "/readiness", label: "AI Lens", icon: "⚡" },
+    { to: "/opportunities", label: "Jobs", icon: "🎯" },
+    { to: "/skills-card", label: "Card", icon: "🪪" },
+  ] as const;
+
+  return (
+    <nav className="fixed inset-x-0 bottom-0 z-50 border-t border-hairline bg-background/95 backdrop-blur-md md:hidden">
+      <div className="flex items-stretch">
+        {tabs.map((tab) => {
+          const active =
+            tab.to === "/"
+              ? location.pathname === "/"
+              : location.pathname.startsWith(tab.to);
+          return (
+            <Link
+              key={tab.to}
+              to={tab.to}
+              className={
+                "flex flex-1 flex-col items-center justify-center gap-0.5 py-2.5 text-center transition-colors " +
+                (active ? "text-foreground" : "text-muted-foreground")
+              }
+            >
+              <span className="text-lg leading-none">{tab.icon}</span>
+              <span className={`text-[10px] font-medium ${active ? "font-semibold" : ""}`}>
+                {tab.label}
+              </span>
+            </Link>
+          );
+        })}
+      </div>
+    </nav>
   );
 }
 
