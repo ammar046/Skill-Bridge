@@ -1,12 +1,16 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowRight, Wifi, ShieldCheck, BarChart3 } from "lucide-react";
+import { ArrowRight, Wifi, ShieldCheck, BarChart3, Quote } from "lucide-react";
 import { useApp } from "@/context/AppContext";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "UNMAPPED — Map your informal skills to real opportunity" },
-      { name: "description", content: "A portable skills profile for the informal economy. Built for 2G connections and shared phones." },
+      { title: "UNMAPPED — Make informal skills economically legible" },
+      {
+        name: "description",
+        content:
+          "A portable, ESCO-aligned skills profile for the informal economy. Built for 2G connections and shared phones.",
+      },
     ],
   }),
   component: Index,
@@ -15,86 +19,285 @@ export const Route = createFileRoute("/")({
 function Index() {
   const { locale, profile } = useApp();
   return (
-    <div className="space-y-12 py-6">
-      <section className="grid gap-8 md:grid-cols-[1.4fr,1fr] md:gap-12">
-        <div>
-          <span className="inline-flex items-center gap-2 rounded-full border border-border bg-muted px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-            <span className="h-1.5 w-1.5 rounded-full bg-signal-durable" />
-            Open infra · {locale.flag} {locale.country}
-          </span>
-          <h1 className="mt-4 text-4xl font-semibold tracking-tight text-foreground md:text-5xl">
-            Make informal skills <span className="underline decoration-signal-durable decoration-4 underline-offset-4">economically legible</span>.
+    <div className="space-y-16 py-2 md:space-y-24">
+      {/* HERO — editorial broadsheet */}
+      <section className="grid gap-8 md:grid-cols-12 md:gap-10">
+        <div className="md:col-span-7 animate-fade-up">
+          <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">
+            <span className="h-px w-8 bg-foreground" />
+            Vol. 01 · Issue 01 · {locale.country}
+          </div>
+
+          <h1 className="display mt-5 text-[44px] font-semibold leading-[0.95] tracking-tight text-foreground text-balance md:text-[76px]">
+            Make informal skills{" "}
+            <em className="not-italic relative">
+              economically
+              <svg
+                viewBox="0 0 200 14"
+                className="absolute -bottom-1 left-0 h-2 w-full text-signal-durable"
+                preserveAspectRatio="none"
+              >
+                <path
+                  d="M2 9 Q 50 2, 100 7 T 198 5"
+                  stroke="currentColor"
+                  strokeWidth="3"
+                  fill="none"
+                  strokeLinecap="round"
+                  className="animate-draw"
+                />
+              </svg>
+            </em>{" "}
+            legible.
           </h1>
-          <p className="mt-4 max-w-xl text-base text-muted-foreground">
-            UNMAPPED turns lived work history into a portable, ESCO-aligned skills profile —
-            with honest opportunity matching and AI-readiness signals calibrated for {locale.country}.
+
+          <p className="mt-6 max-w-xl text-base leading-relaxed text-muted-foreground text-pretty md:text-lg">
+            UNMAPPED turns lived work history into a portable, ESCO-aligned skills
+            profile — with honest opportunity matching and AI-readiness signals
+            calibrated for {locale.country}.
           </p>
-          <div className="mt-6 flex flex-wrap items-center gap-3">
+
+          <div className="mt-8 flex flex-wrap items-center gap-3">
             <Link
               to={profile ? "/profile" : "/onboarding"}
-              className="inline-flex items-center gap-2 rounded-md bg-foreground px-5 py-2.5 text-sm font-semibold text-background transition-colors hover:bg-foreground/90"
+              className="group inline-flex items-center gap-2 rounded-full bg-foreground px-6 py-3 text-sm font-semibold text-background shadow-lift transition-all hover:translate-y-[-1px]"
             >
-              {profile ? "Open my profile" : "Start mapping"}
-              <ArrowRight className="h-4 w-4" />
+              {profile ? "Open my profile" : "Start mapping — 2 minutes"}
+              <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
             </Link>
             <Link
               to="/admin"
-              className="inline-flex items-center gap-2 rounded-md border border-border px-5 py-2.5 text-sm font-medium text-foreground hover:bg-accent"
+              className="inline-flex items-center gap-2 rounded-full border border-hairline bg-background px-5 py-3 text-sm font-medium text-foreground transition-colors hover:bg-muted"
             >
               Policymaker view
             </Link>
           </div>
+
+          <div className="mt-10 grid grid-cols-3 gap-px overflow-hidden rounded-xl border border-hairline bg-hairline">
+            <Metric n="1.6B" label="Informal workers globally" />
+            <Metric n="71%" label="Of African employment" />
+            <Metric n="0" label="Globally portable IDs" tone="risk" />
+          </div>
         </div>
-        <div className="rounded-xl border border-border bg-surface-raised p-5">
-          <div className="flex items-center justify-between text-xs text-muted-foreground">
-            <span className="uppercase tracking-wider">Live econometric signals</span>
-            <span className="num">{locale.currency}</span>
+
+        {/* Live signals card */}
+        <aside className="md:col-span-5 animate-fade-up [animation-delay:120ms]">
+          <div className="relative overflow-hidden rounded-2xl border border-hairline bg-card p-6 shadow-card">
+            <div className="pointer-events-none absolute inset-x-0 top-0 h-1 bg-holo opacity-70" />
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
+                <span className="h-1.5 w-1.5 animate-pulse-dot rounded-full bg-signal-durable" />
+                Live econometric signals
+              </div>
+              <span className="num text-[10px] font-medium text-muted-foreground">
+                {locale.currency}
+              </span>
+            </div>
+
+            <div className="mt-5 space-y-4">
+              <SignalRow
+                label="ILO wage floor · Electronics tech"
+                value={`${locale.currencySymbol} ${locale.sampleWageFloor.toLocaleString()}`}
+                unit="/mo"
+                delta="+3.4%"
+                positive
+                spark={[12, 14, 13, 16, 18, 17, 20, 22, 21, 24]}
+              />
+              <SignalRow
+                label="Youth NEET rate · ILO 2024"
+                value={`${locale.policymakerStats.neetRate.toFixed(1)}`}
+                unit="%"
+                delta="critical"
+                spark={[20, 22, 21, 24, 25, 26, 27, 28, 28, 28.4]}
+              />
+              <SignalRow
+                label="World Bank HCI · 0–1"
+                value={locale.policymakerStats.hciScore.toFixed(2)}
+                unit=""
+                delta="stable"
+                spark={[0.4, 0.41, 0.42, 0.42, 0.43, 0.44, 0.44, 0.45, 0.45, 0.45]}
+              />
+              <SignalRow
+                label="UNESCO secondary enrollment"
+                value={`${locale.policymakerStats.enrollment.toFixed(1)}`}
+                unit="%"
+                delta="+1.1%"
+                positive
+                spark={[60, 62, 64, 66, 67, 68, 70, 71, 72, locale.policymakerStats.enrollment]}
+              />
+            </div>
+
+            <p className="mt-5 border-t border-hairline pt-3 text-[10px] uppercase tracking-wider text-muted-foreground">
+              Sources are mocked for the demo · contracts mirror future FastAPI shapes
+            </p>
           </div>
-          <div className="mt-4 space-y-4">
-            <Stat label="ILO wage floor (electronics tech)" value={`${locale.currencySymbol} ${locale.sampleWageFloor.toLocaleString()}/mo`} delta="+3.4%" positive />
-            <Stat label="Youth NEET rate" value={`${locale.policymakerStats.neetRate.toFixed(1)}%`} delta="ILO 2024" />
-            <Stat label="World Bank HCI" value={locale.policymakerStats.hciScore.toFixed(2)} delta="0–1 scale" />
-          </div>
+        </aside>
+      </section>
+
+      {/* Quote */}
+      <section className="border-y border-hairline bg-paper py-12">
+        <div className="mx-auto max-w-3xl px-2 text-center">
+          <Quote className="mx-auto h-6 w-6 text-signal-durable" />
+          <blockquote className="display mt-4 text-2xl font-medium leading-snug tracking-tight text-foreground text-balance md:text-3xl">
+            "I've run a phone repair business since I was 17. No certificate.
+            No bank knows my skill. No employer can see my track record."
+          </blockquote>
+          <figcaption className="mt-4 text-xs uppercase tracking-[0.2em] text-muted-foreground">
+            — Amara, 22 · Madina market, Accra
+          </figcaption>
         </div>
       </section>
 
+      {/* Pillars */}
       <section className="grid gap-4 md:grid-cols-3">
-        <FeatureCard icon={<Wifi className="h-4 w-4" />} title="Built for 2G">
-          System fonts, no hero images, offline-first PWA logic. Works on a shared phone in Madina market or Anarkali bazaar.
+        <FeatureCard
+          n="01"
+          icon={<Wifi className="h-4 w-4" />}
+          title="Built for 2G"
+        >
+          System fonts, no hero images, offline-first PWA logic. Works on a shared
+          phone in Madina market or Anarkali bazaar.
         </FeatureCard>
-        <FeatureCard icon={<ShieldCheck className="h-4 w-4" />} title="Honest matching">
-          Every opportunity surfaces ILO wage floors and sector growth — no inflated promises.
+        <FeatureCard
+          n="02"
+          icon={<ShieldCheck className="h-4 w-4" />}
+          title="Honest matching"
+        >
+          Every opportunity surfaces ILO wage floors and sector growth — no
+          inflated promises, no extractive funnels.
         </FeatureCard>
-        <FeatureCard icon={<BarChart3 className="h-4 w-4" />} title="Policy-grade data">
-          Aggregate skill-gap heatmaps powered by ILO, World Bank, UNESCO, and Wittgenstein projections.
+        <FeatureCard
+          n="03"
+          icon={<BarChart3 className="h-4 w-4" />}
+          title="Policy-grade data"
+        >
+          Aggregate skill-gap heatmaps powered by ILO, World Bank, UNESCO, and
+          Wittgenstein 2025–2035 projections.
         </FeatureCard>
+      </section>
+
+      {/* CTA strip */}
+      <section className="relative overflow-hidden rounded-3xl border border-hairline bg-foreground px-6 py-12 text-background md:px-12 md:py-16">
+        <div className="pointer-events-none absolute inset-0 bg-grid-paper opacity-[0.06]" />
+        <div className="relative grid gap-6 md:grid-cols-[1.5fr,1fr] md:items-end">
+          <div>
+            <p className="text-[10px] uppercase tracking-[0.22em] text-background/60">
+              For Amara, for Hassan, for 1.6 billion others
+            </p>
+            <h2 className="display mt-3 text-3xl font-semibold leading-tight tracking-tight text-balance md:text-5xl">
+              Your work is real. Now make it readable.
+            </h2>
+          </div>
+          <Link
+            to={profile ? "/profile" : "/onboarding"}
+            className="group inline-flex items-center justify-center gap-2 rounded-full bg-background px-6 py-3 text-sm font-semibold text-foreground transition-transform hover:translate-y-[-1px]"
+          >
+            {profile ? "Open my profile" : "Begin onboarding"}
+            <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+          </Link>
+        </div>
       </section>
     </div>
   );
 }
 
-function Stat({ label, value, delta, positive }: { label: string; value: string; delta: string; positive?: boolean }) {
+function Metric({ n, label, tone }: { n: string; label: string; tone?: "risk" }) {
   return (
-    <div className="flex items-end justify-between border-b border-border pb-3 last:border-0 last:pb-0">
-      <div>
-        <div className="text-[11px] uppercase tracking-wider text-muted-foreground">{label}</div>
-        <div className="num mt-1 text-lg font-semibold text-foreground">{value}</div>
+    <div className="bg-background px-4 py-4">
+      <div
+        className={
+          "num text-2xl font-semibold " +
+          (tone === "risk" ? "text-signal-risk" : "text-foreground")
+        }
+      >
+        {n}
       </div>
-      <span className={"num text-xs font-semibold " + (positive ? "text-signal-durable" : "text-muted-foreground")}>
+      <div className="mt-1 text-[11px] leading-tight text-muted-foreground">{label}</div>
+    </div>
+  );
+}
+
+function SignalRow({
+  label,
+  value,
+  unit,
+  delta,
+  positive,
+  spark,
+}: {
+  label: string;
+  value: string;
+  unit: string;
+  delta: string;
+  positive?: boolean;
+  spark: number[];
+}) {
+  const max = Math.max(...spark);
+  const min = Math.min(...spark);
+  const range = max - min || 1;
+  const w = 80;
+  const h = 22;
+  const points = spark
+    .map((v, i) => {
+      const x = (i / (spark.length - 1)) * w;
+      const y = h - ((v - min) / range) * h;
+      return `${x.toFixed(1)},${y.toFixed(1)}`;
+    })
+    .join(" ");
+  const stroke = positive ? "var(--signal-durable)" : "var(--ink-muted)";
+  return (
+    <div className="flex items-center justify-between gap-3 border-b border-hairline pb-3 last:border-0 last:pb-0">
+      <div className="min-w-0 flex-1">
+        <div className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
+          {label}
+        </div>
+        <div className="mt-1 flex items-baseline gap-1">
+          <span className="num text-lg font-semibold text-foreground">{value}</span>
+          <span className="num text-xs text-muted-foreground">{unit}</span>
+        </div>
+      </div>
+      <svg width={w} height={h} className="shrink-0">
+        <polyline
+          points={points}
+          fill="none"
+          stroke={stroke}
+          strokeWidth="1.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
+      <span
+        className={
+          "num w-16 text-right text-xs font-semibold " +
+          (positive ? "text-signal-durable" : "text-muted-foreground")
+        }
+      >
         {delta}
       </span>
     </div>
   );
 }
 
-function FeatureCard({ icon, title, children }: { icon: React.ReactNode; title: string; children: React.ReactNode }) {
+function FeatureCard({
+  n,
+  icon,
+  title,
+  children,
+}: {
+  n: string;
+  icon: React.ReactNode;
+  title: string;
+  children: React.ReactNode;
+}) {
   return (
-    <div className="rounded-xl border border-border bg-card p-5">
-      <div className="flex items-center gap-2 text-foreground">
-        <span className="rounded-md bg-muted p-1.5">{icon}</span>
-        <h3 className="text-sm font-semibold">{title}</h3>
+    <article className="group relative rounded-2xl border border-hairline bg-card p-6 transition-all hover:shadow-lift">
+      <div className="flex items-center justify-between">
+        <span className="num text-[10px] font-medium text-muted-foreground">{n}</span>
+        <span className="rounded-md bg-muted p-1.5 text-foreground">{icon}</span>
       </div>
-      <p className="mt-3 text-sm text-muted-foreground">{children}</p>
-    </div>
+      <h3 className="display mt-6 text-xl font-semibold tracking-tight text-foreground">
+        {title}
+      </h3>
+      <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{children}</p>
+    </article>
   );
 }
