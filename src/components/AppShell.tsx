@@ -14,10 +14,11 @@ import { useApp } from "@/context/AppContext";
 import { formatWage } from "@/lib/locales";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
-  const { locale, viewMode, profile, uiLocale, setUiLocale } = useApp();
+  const { locale, viewMode, profile, uiLocale, setUiLocale, countryCode } = useApp();
   const location = useLocation();
   const onAdmin = location.pathname.startsWith("/admin");
   const isRtl = uiLocale === "ur";
+  const showLangToggle = countryCode === "PK";
 
   // Apply RTL direction to document root
   useEffect(() => {
@@ -84,13 +85,15 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               <span className="h-1.5 w-1.5 animate-pulse-dot rounded-full bg-signal-durable" />
               {locale.flag} {locale.country} · {viewMode === "user" ? "User" : "Policy"}
             </span>
-            <button
-              onClick={() => setUiLocale(uiLocale === "en" ? "ur" : "en")}
-              className="rounded-full border border-hairline bg-background px-2.5 py-1 text-[11px] font-medium text-muted-foreground transition-colors hover:bg-muted"
-              title="Toggle language / زبان تبدیل کریں"
-            >
-              {uiLocale === "en" ? "اردو" : "EN"}
-            </button>
+            {showLangToggle && (
+              <button
+                onClick={() => setUiLocale(uiLocale === "en" ? "ur" : "en")}
+                className="rounded-full border border-hairline bg-background px-2.5 py-1 text-[11px] font-medium text-muted-foreground transition-colors hover:bg-muted"
+                title="زبان تبدیل کریں / Switch language"
+              >
+                {uiLocale === "en" ? "اردو" : "EN"}
+              </button>
+            )}
             <DevSettings />
           </div>
         </div>

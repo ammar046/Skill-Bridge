@@ -54,19 +54,27 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setViewModeState(readLS<ViewMode>(LS_KEYS.view, "user"));
     setProfileState(readLS<UserProfile | null>(LS_KEYS.profile, null));
     setGenderState(readLS<"female" | "male" | "other" | null>(LS_KEYS.gender, null));
-    // Default uiLocale to 'ur' for Pakistan unless manually overridden
-    const savedLocale = readLS<UILocale | null>(LS_KEYS.uiLocale, null);
-    setUiLocaleState(savedLocale ?? (country === "PK" ? "ur" : "en"));
+    // Ghana is always English. Pakistan defaults to Urdu unless user toggled to EN.
+    if (country === "GH") {
+      setUiLocaleState("en");
+    } else {
+      const savedLocale = readLS<UILocale | null>(LS_KEYS.uiLocale, null);
+      setUiLocaleState(savedLocale ?? "ur");
+    }
     setHydrated(true);
   }, []);
 
   const setCountry = useCallback((c: CountryCode) => {
     setCountryCodeState(c);
     if (typeof window !== "undefined") localStorage.setItem(LS_KEYS.country, JSON.stringify(c));
-    // Auto-switch UI language when country changes (unless manually set)
-    const savedLocale = readLS<UILocale | null>(LS_KEYS.uiLocale, null);
-    if (!savedLocale) {
-      setUiLocaleState(c === "PK" ? "ur" : "en");
+    if (c === "GH") {
+      // Ghana: always English, clear any saved Urdu preference
+      setUiLocaleState("en");
+      if (typeof window !== "undefined") localStorage.removeItem(LS_KEYS.uiLocale);
+    } else if (c === "PK") {
+      // Pakistan: restore saved preference or default to Urdu
+      const savedLocale = readLS<UILocale | null>(LS_KEYS.uiLocale, null);
+      setUiLocaleState(savedLocale ?? "ur");
     }
   }, []);
   const setViewMode = useCallback((v: ViewMode) => {
@@ -94,6 +102,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setGender(null);
   }, [setProfile, setViewMode, setGender]);
 
+  // Ghana is always English — enforce at the context boundary
+  const effectiveUiLocale: UILocale = countryCode === "GH" ? "en" : uiLocaleState;
+
   const value = useMemo<AppContextValue>(() => ({
     locale: LOCALES[countryCode],
     countryCode,
@@ -103,11 +114,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     profile,
     setProfile,
     resetAll,
-    uiLocale: uiLocaleState,
+    uiLocale: effectiveUiLocale,
     setUiLocale,
     gender,
     setGender,
-  }), [countryCode, viewMode, profile, uiLocaleState, gender, setCountry, setViewMode, setProfile, resetAll, setUiLocale, setGender]);
+  }), [countryCode, viewMode, profile, effectiveUiLocale, gender, setCountry, setViewMode, setProfile, resetAll, setUiLocale, setGender]);
 
   // Avoid hydration flicker by rendering a stable shell first
   if (!hydrated) {
