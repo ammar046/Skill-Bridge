@@ -4,3 +4,4 @@ pydantic
 google-genai
 tavily-python
 python-dotenv
+wbgapi

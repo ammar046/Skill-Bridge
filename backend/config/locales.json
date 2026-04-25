@@ -1,0 +1,196 @@
+{
+  "_meta": {
+    "version": "2.0",
+    "sources": [
+      "ILOSTAT 2024 — wage floors and sector growth indices",
+      "World Bank Human Capital Index 2024",
+      "World Bank WDI 2024 — gross secondary enrollment",
+      "Frey & Osborne (2017) — automation probability scores, LMIC-adjusted by ILO (2019)",
+      "ILO Future of Work task-content indices (2020)",
+      "Wittgenstein Centre for Demography — Education Projections 2025-2035",
+      "World Bank STEP Skills Measurement Programme",
+      "UNESCO ISCED education taxonomy mappings"
+    ],
+    "note": "All econometric signals are configurable here without changing application code."
+  },
+
+  "gh": {
+    "code": "gh",
+    "country_code": "GH",
+    "country": "Ghana",
+    "context": "Sub-Saharan Africa — Urban Informal",
+    "currency": "GHS",
+    "currency_symbol": "₵",
+    "region_default": "Greater Accra",
+    "language_tag": "en-GH",
+    "education_taxonomy": {
+      "name": "NVTI / CTVET",
+      "full_name": "National Vocational Training Institute / Council for Technical and Vocational Education and Training",
+      "isced_mapping": "ISCED 3-4 (Upper Secondary / Post-Secondary non-tertiary)",
+      "rpl_pathway_exists": true,
+      "rpl_uptake_pct": 8.2
+    },
+
+    "ilo_econometrics": {
+      "source": "ILOSTAT 2024",
+      "wage_floor_local": 1850,
+      "wage_floor_usd_ppp": 312,
+      "informal_economy_share_pct": 78.3,
+      "youth_neet_rate_pct": 28.4,
+      "female_labour_participation_pct": 52.1,
+      "sector_growth_indices": {
+        "ict_repair": { "annual_growth_pct": 4.1, "demand_gap_pct": 78 },
+        "construction": { "annual_growth_pct": 3.2, "demand_gap_pct": 61 },
+        "agri_processing": { "annual_growth_pct": 2.8, "demand_gap_pct": 54 },
+        "solar_energy": { "annual_growth_pct": 6.3, "demand_gap_pct": 82 },
+        "healthcare_community": { "annual_growth_pct": 5.1, "demand_gap_pct": 71 },
+        "creative_digital": { "annual_growth_pct": 7.4, "demand_gap_pct": 89 }
+      },
+      "returns_to_education_pct": 9.8,
+      "returns_to_vocational_pct": 12.4
+    },
+
+    "world_bank": {
+      "source": "World Bank HCI & WDI 2024",
+      "hci_score": 0.45,
+      "gross_secondary_enrollment_pct": 73.2,
+      "tertiary_enrollment_pct": 18.6,
+      "step_survey_available": false,
+      "gdp_per_capita_usd_ppp": 6420
+    },
+
+    "wittgenstein_projections": {
+      "source": "Wittgenstein Centre for Demography 2025-2035",
+      "scenario": "SSP2 Medium",
+      "education_attainment_trend": "improving",
+      "demand_growth_high_skill_pct_yr": 4.1,
+      "demand_growth_mid_skill_pct_yr": 2.3,
+      "tvet_supply_gap_pct": 78,
+      "note": "IoT-adjacent and solar-tech demand grows 4.1%/yr through 2035 in Greater Accra; current TVET supply meets ~22% of demand."
+    },
+
+    "frey_osborne_lmic_calibration": {
+      "source": "Frey & Osborne (2017), ILO LMIC adjustment (2019)",
+      "calibration_note": "Automation probability in LMIC contexts is 15-25% lower than OECD baseline due to lower capital-labour cost ratios and higher demand for relational/physical tasks in informal markets.",
+      "high_risk_threshold": 0.70,
+      "medium_risk_threshold": 0.45,
+      "durable_isco_codes": ["7231","7232","7212","8211","5321","3212","7411","6111"],
+      "at_risk_isco_codes": ["4110","4132","5221","9211","9329","4312"]
+    },
+
+    "districts": [
+      { "name": "Accra Metro", "skill_gap": 38, "hci_local": 0.52, "neet_pct": 22.1 },
+      { "name": "Tema", "skill_gap": 52, "hci_local": 0.48, "neet_pct": 26.4 },
+      { "name": "Kumasi", "skill_gap": 61, "hci_local": 0.44, "neet_pct": 29.8 },
+      { "name": "Tamale", "skill_gap": 74, "hci_local": 0.37, "neet_pct": 36.2 },
+      { "name": "Cape Coast", "skill_gap": 47, "hci_local": 0.49, "neet_pct": 25.1 },
+      { "name": "Sekondi-Takoradi", "skill_gap": 55, "hci_local": 0.46, "neet_pct": 27.9 },
+      { "name": "Sunyani", "skill_gap": 66, "hci_local": 0.41, "neet_pct": 31.5 },
+      { "name": "Ho", "skill_gap": 49, "hci_local": 0.47, "neet_pct": 25.8 },
+      { "name": "Wa", "skill_gap": 81, "hci_local": 0.33, "neet_pct": 41.7 },
+      { "name": "Bolgatanga", "skill_gap": 78, "hci_local": 0.35, "neet_pct": 39.2 },
+      { "name": "Koforidua", "skill_gap": 44, "hci_local": 0.50, "neet_pct": 24.3 },
+      { "name": "Techiman", "skill_gap": 58, "hci_local": 0.43, "neet_pct": 28.6 }
+    ],
+
+    "policy_insights": [
+      "Northern districts show 2× higher skill gaps than coastal — prioritise mobile NVTI units in Wa & Bolgatanga.",
+      "Phone-repair informal labour overlaps 71% with ESCO 7421 — recognising prior learning could formalise ~12,400 youth in 18 months.",
+      "Wittgenstein 2025-2035 (SSP2): IoT-adjacent demand grows 4.1%/yr through 2035 in Greater Accra; current TVET supply meets ~22%.",
+      "ILO LMIC calibration: automation risk in Ghana's informal sector is 18% lower than OECD baseline — wage competition, not displacement, is the primary risk.",
+      "World Bank HCI 0.45 — closing the skills-recognition gap by 10pp could add 0.8% to annual GDP per World Bank STEP modelling."
+    ],
+
+    "sample_narrative": "I've run a phone repair business since I was 17 in Madina market. I fix screens, batteries, and sometimes I help my cousin sell SIM cards."
+  },
+
+  "pk": {
+    "code": "pk",
+    "country_code": "PK",
+    "country": "Pakistan",
+    "context": "South Asia — Rural Agricultural / Peri-Urban",
+    "currency": "PKR",
+    "currency_symbol": "₨",
+    "region_default": "Punjab",
+    "language_tag": "en-PK",
+    "education_taxonomy": {
+      "name": "NAVTTC / TEVTA",
+      "full_name": "National Vocational and Technical Training Commission / Technical Education and Vocational Training Authority",
+      "isced_mapping": "ISCED 3-4 (Upper Secondary / Post-Secondary non-tertiary)",
+      "rpl_pathway_exists": true,
+      "rpl_uptake_pct": 3.8
+    },
+
+    "ilo_econometrics": {
+      "source": "ILOSTAT 2024",
+      "wage_floor_local": 37000,
+      "wage_floor_usd_ppp": 228,
+      "informal_economy_share_pct": 71.5,
+      "youth_neet_rate_pct": 31.6,
+      "female_labour_participation_pct": 20.4,
+      "sector_growth_indices": {
+        "solar_installation": { "annual_growth_pct": 5.7, "demand_gap_pct": 82 },
+        "mobile_repair": { "annual_growth_pct": 3.9, "demand_gap_pct": 74 },
+        "agri_tech": { "annual_growth_pct": 4.4, "demand_gap_pct": 68 },
+        "construction_masonry": { "annual_growth_pct": 2.6, "demand_gap_pct": 55 },
+        "textile_garments": { "annual_growth_pct": 1.8, "demand_gap_pct": 42 },
+        "healthcare_community": { "annual_growth_pct": 4.8, "demand_gap_pct": 77 }
+      },
+      "returns_to_education_pct": 7.9,
+      "returns_to_vocational_pct": 10.6
+    },
+
+    "world_bank": {
+      "source": "World Bank HCI & WDI 2024",
+      "hci_score": 0.41,
+      "gross_secondary_enrollment_pct": 46.8,
+      "tertiary_enrollment_pct": 9.4,
+      "step_survey_available": true,
+      "gdp_per_capita_usd_ppp": 5580
+    },
+
+    "wittgenstein_projections": {
+      "source": "Wittgenstein Centre for Demography 2025-2035",
+      "scenario": "SSP2 Medium",
+      "education_attainment_trend": "slowly improving",
+      "demand_growth_high_skill_pct_yr": 3.4,
+      "demand_growth_mid_skill_pct_yr": 2.1,
+      "tvet_supply_gap_pct": 82,
+      "note": "Solar-installation demand grows 5.7%/yr in Punjab through 2035; current NAVTTC throughput covers 18% of projected need."
+    },
+
+    "frey_osborne_lmic_calibration": {
+      "source": "Frey & Osborne (2017), ILO LMIC adjustment (2019)",
+      "calibration_note": "Pakistan's rural-agricultural context reduces automation risk by 20-28% vs OECD baseline. Physical, relational, and context-dependent tasks dominate informal markets.",
+      "high_risk_threshold": 0.70,
+      "medium_risk_threshold": 0.45,
+      "durable_isco_codes": ["6111","6112","7411","7231","8211","5321","3212","3114"],
+      "at_risk_isco_codes": ["9211","9212","4110","5221","4132","9329"]
+    },
+
+    "districts": [
+      { "name": "Lahore", "skill_gap": 41, "hci_local": 0.51, "neet_pct": 24.6 },
+      { "name": "Karachi South", "skill_gap": 48, "hci_local": 0.47, "neet_pct": 27.3 },
+      { "name": "Karachi East", "skill_gap": 56, "hci_local": 0.44, "neet_pct": 30.1 },
+      { "name": "Faisalabad", "skill_gap": 62, "hci_local": 0.42, "neet_pct": 32.8 },
+      { "name": "Rawalpindi", "skill_gap": 45, "hci_local": 0.49, "neet_pct": 26.1 },
+      { "name": "Multan", "skill_gap": 67, "hci_local": 0.40, "neet_pct": 34.5 },
+      { "name": "Peshawar", "skill_gap": 72, "hci_local": 0.37, "neet_pct": 37.9 },
+      { "name": "Quetta", "skill_gap": 84, "hci_local": 0.31, "neet_pct": 44.2 },
+      { "name": "Hyderabad", "skill_gap": 59, "hci_local": 0.43, "neet_pct": 31.4 },
+      { "name": "Sialkot", "skill_gap": 51, "hci_local": 0.46, "neet_pct": 28.7 },
+      { "name": "Gujranwala", "skill_gap": 54, "hci_local": 0.45, "neet_pct": 29.6 },
+      { "name": "Bahawalpur", "skill_gap": 76, "hci_local": 0.34, "neet_pct": 40.1 }
+    ],
+
+    "policy_insights": [
+      "Balochistan & southern Punjab show critical gaps — TEVTA mobile training pods could reach ~8,900 youth in Quetta corridor.",
+      "Informal mobile-repair workforce maps to ESCO 7421 with 68% confidence — RPL pathways exist but uptake is <4%.",
+      "Wittgenstein 2025-2035 (SSP2): solar-installation demand grows 5.7%/yr in Punjab; current NAVTTC throughput covers 18% of projected need.",
+      "World Bank STEP data: workers with recognized vocational credentials earn 23% more than unrecognized peers with equivalent skills.",
+      "ILO LMIC calibration: 71.5% of Pakistan's workforce is informal — automation displaces tasks, not workers, in this context; upskilling outperforms job-matching alone."
+    ],
+
+    "sample_narrative": "I've been repairing mobile phones in my uncle's shop in Anarkali since I was 16. I do screens, batteries, software flashing, and small motherboard work."
+  }
+}

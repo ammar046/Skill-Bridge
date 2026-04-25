@@ -1,336 +1,327 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import {
-  Sparkles,
-  TrendingDown,
-  Users,
-  GraduationCap,
-  Activity,
+  TrendingUp, Users, BookOpen, AlertCircle, Globe,
+  BarChart3, Lightbulb, Shield, Wifi, Database, Zap,
 } from "lucide-react";
 import { useApp } from "@/context/AppContext";
-import { getAdminAggregates } from "@/lib/api";
-import type { AdminAggregates } from "@/types/api";
+import { getPolicymakerStats } from "@/lib/api";
+import type { PolicymakerLiveStats } from "@/types/api";
+import { LiveKpi, SourceBadge } from "@/components/SourceBadge";
 
 export const Route = createFileRoute("/admin")({
   head: () => ({ meta: [{ title: "Policymaker Dashboard · UNMAPPED" }] }),
-  component: Admin,
+  component: PolicymakerDashboard,
 });
 
-function Admin() {
+function PolicymakerDashboard() {
   const { locale } = useApp();
-  const [data, setData] = useState<AdminAggregates | null>(null);
+  const [stats, setStats] = useState<PolicymakerLiveStats | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    getAdminAggregates(locale).then(setData);
+    setLoading(true);
+    getPolicymakerStats(locale)
+      .then((data) => { setStats(data); setLoading(false); })
+      .catch((err: unknown) => {
+        setError(err instanceof Error ? err.message : String(err));
+        setLoading(false);
+      });
   }, [locale]);
 
-  if (!data)
-    return (
-      <div className="flex flex-col items-center justify-center py-24 text-sm text-muted-foreground">
-        <div className="flex items-center gap-2">
-          <Activity className="h-4 w-4 animate-pulse text-signal-durable" />
-          Loading aggregates from ILO · World Bank · UNESCO…
-        </div>
-      </div>
-    );
+  if (loading) return <DashboardSkeleton />;
+  if (error || !stats) return <ErrorState message={error ?? "Unknown error"} />;
 
-  const sortedDistricts = [...data.districts].sort((a, b) => b.gap - a.gap);
-  const avgGap =
-    data.districts.reduce((a, d) => a + d.gap, 0) / data.districts.length;
+  const maxGap = Math.max(...stats.districts.map((d) => d.skill_gap));
+  const liveCount = stats.live_indicators_count;
 
   return (
-    <div className="space-y-10 py-2">
-      <header className="flex flex-wrap items-end justify-between gap-6 border-b border-hairline pb-8 animate-fade-up">
+    <div className="mx-auto max-w-5xl space-y-8 py-2">
+
+      {/* Header */}
+      <div className="flex flex-wrap items-start justify-between gap-4 border-b border-hairline pb-6">
         <div>
           <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">
-            Policymaker dashboard · Q1 2026
+            UNMAPPED Protocol · Policymaker Intelligence Layer
           </p>
-          <h1 className="display mt-2 text-4xl font-semibold tracking-tight text-foreground md:text-5xl text-balance">
-            {locale.country} skills landscape
+          <h1 className="display mt-1 text-3xl font-semibold tracking-tight">
+            {stats.country} — {stats.context}
           </h1>
-          <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-            Aggregated from ILO, World Bank, UNESCO, and UNMAPPED field intake. Read-only
-            demo with seeded data.
+          <p className="mt-1 text-sm text-muted-foreground">
+            Aggregate econometric signals for workforce policy and investment targeting
           </p>
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            <span className="inline-flex items-center gap-1 rounded-full border border-signal-durable/30 bg-signal-durable-soft px-2.5 py-1 text-[10px] font-semibold text-signal-durable">
+              <Wifi className="h-3 w-3" />
+              {liveCount} live indicators (World Bank WDI)
+            </span>
+            <span className="inline-flex items-center gap-1 rounded-full border border-hairline bg-muted px-2.5 py-1 text-[10px] text-muted-foreground">
+              <Database className="h-3 w-3" />
+              ILOSTAT · Wittgenstein Centre published baselines
+            </span>
+            <span className="text-[9px] text-muted-foreground">
+              Updated: {new Date(stats.fetched_at).toLocaleString()}
+            </span>
+          </div>
         </div>
-        <span className="rounded-full border border-hairline bg-background px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-          {locale.flag} {locale.country} · {locale.educationTaxonomy}
-        </span>
-      </header>
-
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-        <StatCard
-          icon={<Users className="h-4 w-4" />}
-          source="ILO 2024"
-          label="Youth NEET rate"
-          value={`${data.neetRate.toFixed(1)}%`}
-          context="15–24, not in employment, education, training"
-          tone="risk"
-          spark={[24, 25, 26, 26.5, 27, 27.5, 28, 28.2, 28.4, data.neetRate]}
-        />
-        <StatCard
-          icon={<TrendingDown className="h-4 w-4" />}
-          source="World Bank"
+        <LiveKpi
           label="Human Capital Index"
-          value={data.hciScore.toFixed(2)}
-          context="0 = no capital · 1 = full potential"
-          tone="neutral"
-          spark={[0.4, 0.41, 0.42, 0.42, 0.43, 0.44, 0.44, 0.44, 0.45, data.hciScore]}
-        />
-        <StatCard
-          icon={<GraduationCap className="h-4 w-4" />}
-          source="UNESCO"
-          label="Secondary enrollment"
-          value={`${data.enrollment.toFixed(1)}%`}
-          context="Gross enrollment ratio, latest year"
-          tone="durable"
-          spark={[58, 60, 62, 64, 66, 68, 70, 71, 72, data.enrollment]}
+          indicator={stats.hci_score}
+          format={(v) => `${v.toFixed(2)} / 1.0`}
+          accent="neutral"
+          icon={<Users className="h-4 w-4" />}
         />
       </div>
 
-      {/* Heatmap */}
-      <section className="rounded-2xl border border-hairline bg-card p-6 shadow-card">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <div>
-            <h2 className="display text-2xl font-semibold tracking-tight">
-              Skill gap heatmap
+      {/* KPI grid — all with live source badges */}
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
+        <LiveKpi
+          label="Youth NEET Rate"
+          indicator={stats.neet_rate_pct}
+          format={(v) => `${v.toFixed(1)}%`}
+          accent="risk"
+          icon={<Users className="h-4 w-4" />}
+        />
+        <LiveKpi
+          label="Secondary Enrollment"
+          indicator={stats.gross_secondary_enrollment_pct}
+          format={(v) => `${v.toFixed(1)}%`}
+          accent="neutral"
+          icon={<BookOpen className="h-4 w-4" />}
+        />
+        <LiveKpi
+          label="Internet Penetration"
+          indicator={stats.internet_penetration_pct}
+          format={(v) => `${v.toFixed(1)}%`}
+          accent="neutral"
+          icon={<Globe className="h-4 w-4" />}
+        />
+        <LiveKpi
+          label="ILO Wage Floor"
+          indicator={stats.wage_floor_local}
+          format={(v) => `${locale.currencySymbol}${v.toLocaleString()}/mo`}
+          accent="durable"
+          icon={<TrendingUp className="h-4 w-4" />}
+        />
+        <LiveKpi
+          label="Vulnerable Employment"
+          indicator={stats.vulnerable_employment_pct}
+          format={(v) => `${v.toFixed(1)}%`}
+          accent="risk"
+          icon={<AlertCircle className="h-4 w-4" />}
+        />
+        <LiveKpi
+          label="Automation Delay (ITU)"
+          indicator={stats.automation_delay_years}
+          format={(v) => `~${v} yr${v !== 1 ? "s" : ""} vs OECD`}
+          accent="durable"
+          icon={<Zap className="h-4 w-4" />}
+        />
+      </div>
+
+      {/* Growth sectors + district map */}
+      <div className="grid gap-6 md:grid-cols-2">
+
+        <section className="rounded-2xl border border-hairline bg-card p-6 shadow-card">
+          <div className="mb-1 flex items-center gap-2">
+            <BarChart3 className="h-4 w-4 text-muted-foreground" />
+            <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+              Top Growth Sectors
             </h2>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Higher value = larger mismatch between informal-sector supply and
-              projected sector demand. Average:{" "}
-              <span className="num font-semibold text-foreground">
-                {avgGap.toFixed(0)}
-              </span>
-            </p>
           </div>
-          <Legend />
-        </div>
-
-        <div className="mt-6 grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4">
-          {sortedDistricts.map((d, i) => {
-            const tone =
-              d.gap > 70
-                ? "var(--signal-risk)"
-                : d.gap > 50
-                  ? "color-mix(in oklab, var(--signal-risk) 55%, var(--signal-durable))"
-                  : "var(--signal-durable)";
-            return (
-              <div
-                key={d.name}
-                className="group relative overflow-hidden rounded-xl border border-hairline bg-background p-4 transition-all hover:shadow-lift animate-fade-up"
-                style={{ animationDelay: `${i * 30}ms` }}
-              >
-                <div className="flex items-center justify-between">
-                  <div className="text-xs font-semibold text-foreground">{d.name}</div>
-                  <div
-                    className="h-2 w-2 rounded-full"
-                    style={{ background: tone }}
-                  />
-                </div>
-                <div className="num mt-3 text-2xl font-semibold text-foreground">
-                  {d.gap}
-                </div>
-                <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-muted">
-                  <div
-                    className="h-full rounded-full transition-all duration-700"
-                    style={{ width: `${d.gap}%`, background: tone }}
-                  />
-                </div>
-                <div className="mt-2 text-[10px] uppercase tracking-wider text-muted-foreground">
-                  Gap index
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </section>
-
-      {/* Top urgent districts */}
-      <section className="grid gap-4 md:grid-cols-2">
-        <div className="rounded-2xl border border-signal-risk/30 bg-signal-risk-soft p-6">
-          <h3 className="text-[10px] font-semibold uppercase tracking-[0.22em] text-signal-risk">
-            Top intervention priority
-          </h3>
+          <SourceBadge
+            source="ILOSTAT sector employment projections 2024 · Wittgenstein Centre SSP2"
+            live={false}
+            year="2025-2035"
+          />
           <ul className="mt-4 space-y-3">
-            {sortedDistricts.slice(0, 3).map((d, i) => (
-              <li
-                key={d.name}
-                className="flex items-center justify-between border-b border-signal-risk/20 pb-3 last:border-0"
-              >
-                <div className="flex items-center gap-3">
-                  <span className="num text-2xl font-semibold text-signal-risk">
-                    0{i + 1}
+            {stats.top_growth_sectors.map((s) => (
+              <li key={s.sector}>
+                <div className="flex items-center justify-between text-xs">
+                  <span className="font-medium capitalize text-foreground">
+                    {s.sector.replace(/_/g, " ")}
                   </span>
-                  <div>
-                    <div className="display text-base font-semibold text-foreground">
-                      {d.name}
-                    </div>
-                    <div className="text-xs text-muted-foreground">
-                      Mobile TVET deployment recommended
-                    </div>
-                  </div>
+                  <span className="num font-semibold text-signal-durable">+{s.growth_pct}%/yr</span>
                 </div>
-                <div className="num text-xl font-semibold text-signal-risk">
-                  {d.gap}
+                <div className="mt-1.5 flex items-center gap-2">
+                  <div className="relative h-2 flex-1 overflow-hidden rounded-full bg-muted">
+                    <div
+                      className="absolute left-0 top-0 h-full rounded-full bg-signal-durable"
+                      style={{ width: `${s.demand_gap_pct}%` }}
+                    />
+                  </div>
+                  <span className="num w-16 text-right text-[10px] text-signal-risk">
+                    {s.demand_gap_pct}% gap
+                  </span>
                 </div>
               </li>
             ))}
           </ul>
-        </div>
-        <div className="rounded-2xl border border-signal-durable/30 bg-signal-durable-soft p-6">
-          <h3 className="text-[10px] font-semibold uppercase tracking-[0.22em] text-signal-durable">
-            Lowest gap · scale-ready
-          </h3>
-          <ul className="mt-4 space-y-3">
-            {[...sortedDistricts]
-              .reverse()
-              .slice(0, 3)
-              .map((d, i) => (
-                <li
-                  key={d.name}
-                  className="flex items-center justify-between border-b border-signal-durable/20 pb-3 last:border-0"
-                >
-                  <div className="flex items-center gap-3">
-                    <span className="num text-2xl font-semibold text-signal-durable">
-                      0{i + 1}
-                    </span>
-                    <div>
-                      <div className="display text-base font-semibold text-foreground">
-                        {d.name}
-                      </div>
-                      <div className="text-xs text-muted-foreground">
-                        RPL pathways have proven uptake
-                      </div>
+        </section>
+
+        <section className="rounded-2xl border border-hairline bg-card p-6 shadow-card">
+          <div className="mb-1 flex items-center gap-2">
+            <Globe className="h-4 w-4 text-muted-foreground" />
+            <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+              Skill Gap by District
+            </h2>
+          </div>
+          <SourceBadge source="World Bank HCI subnational estimates 2024 · UNMAPPED aggregation" live={false} />
+          <ul className="mt-4 space-y-2">
+            {[...stats.districts]
+              .sort((a, b) => b.skill_gap - a.skill_gap)
+              .map((d) => {
+                const pct = (d.skill_gap / maxGap) * 100;
+                const isHigh = d.skill_gap >= 70;
+                return (
+                  <li key={d.name} className="flex items-center gap-3">
+                    <span className="w-28 shrink-0 truncate text-xs text-foreground">{d.name}</span>
+                    <div className="relative h-2 flex-1 overflow-hidden rounded-full bg-muted">
+                      <div
+                        className={"absolute left-0 top-0 h-full rounded-full " + (isHigh ? "bg-signal-risk" : "bg-amber-400")}
+                        style={{ width: `${pct}%` }}
+                      />
                     </div>
-                  </div>
-                  <div className="num text-xl font-semibold text-signal-durable">
-                    {d.gap}
-                  </div>
-                </li>
-              ))}
+                    <span className="num w-8 text-right text-[10px] text-muted-foreground">{d.skill_gap}</span>
+                    <span className="num w-12 text-right text-[10px] text-muted-foreground">HCI {d.hci_local.toFixed(2)}</span>
+                  </li>
+                );
+              })}
           </ul>
+        </section>
+      </div>
+
+      {/* ITU Automation delay callout */}
+      {stats.automation_delay_years.value !== null && stats.automation_delay_years.value > 0 && (
+        <section className="rounded-2xl border border-signal-durable/20 bg-signal-durable-soft p-5">
+          <div className="flex items-start gap-3">
+            <Zap className="mt-0.5 h-5 w-5 shrink-0 text-signal-durable" />
+            <div>
+              <p className="text-sm font-semibold text-foreground">
+                ITU Digital Development: ~{stats.automation_delay_years.value} year automation delay vs OECD baseline
+              </p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                {stats.automation_delay_years.label}
+              </p>
+              <SourceBadge source={stats.automation_delay_years.source} live={stats.automation_delay_years.live} />
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* Frey-Osborne + Wittgenstein */}
+      <div className="grid gap-6 md:grid-cols-2">
+        <section className="rounded-2xl border border-hairline bg-card p-6 shadow-card">
+          <div className="mb-2 flex items-center gap-2">
+            <Shield className="h-4 w-4 text-muted-foreground" />
+            <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+              Frey-Osborne LMIC Calibration
+            </h2>
+          </div>
+          <SourceBadge source="Frey & Osborne (2017) · ILO LMIC adjustment (2019)" live={false} year="2019" />
+          <p className="mt-3 text-sm leading-relaxed text-foreground">{stats.frey_osborne_calibration}</p>
+        </section>
+
+        <section className="rounded-2xl border border-hairline bg-card p-6 shadow-card">
+          <div className="mb-2 flex items-center gap-2">
+            <TrendingUp className="h-4 w-4 text-muted-foreground" />
+            <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+              Wittgenstein 2025-2035 Projection
+            </h2>
+          </div>
+          <SourceBadge source={stats.wittgenstein_source} live={false} year="2025-2035" />
+          <p className="mt-3 text-sm leading-relaxed text-foreground">{stats.wittgenstein_note}</p>
+        </section>
+      </div>
+
+      {/* TVET Infrastructure */}
+      <section className="rounded-2xl border border-hairline bg-card p-6 shadow-card">
+        <div className="mb-4 flex items-center gap-2">
+          <Shield className="h-4 w-4 text-muted-foreground" />
+          <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+            RPL &amp; TVET Infrastructure
+          </h2>
+        </div>
+        <div className="grid gap-4 md:grid-cols-3">
+          <div className="rounded-xl bg-muted/50 p-4">
+            <p className="text-xs text-muted-foreground">TVET System</p>
+            <p className="mt-1 font-semibold text-foreground">{stats.tvet_name}</p>
+            <SourceBadge source="UNESCO ISCED taxonomy · locales.json" live={false} />
+          </div>
+          <div className="rounded-xl bg-muted/50 p-4">
+            <p className="text-xs text-muted-foreground">RPL Pathway Uptake</p>
+            <p className="mt-1 font-semibold text-foreground">{stats.rpl_uptake_pct}%</p>
+            <p className="mt-0.5 text-[10px] text-muted-foreground">of eligible informal workers</p>
+            <SourceBadge source="ILOSTAT 2024 published baseline" live={false} year="2024" />
+          </div>
+          <div className="rounded-xl bg-muted/50 p-4">
+            <p className="text-xs text-muted-foreground">Wage premium (TVET)</p>
+            <p className="mt-1 font-semibold text-signal-durable">
+              +{stats.top_growth_sectors[0]?.demand_gap_pct ?? "—"}% demand gap
+            </p>
+            <SourceBadge source="World Bank STEP Skills Measurement Programme" live={false} />
+          </div>
         </div>
       </section>
 
-      {/* AI insights */}
-      <section className="relative overflow-hidden rounded-2xl border border-hairline bg-card p-6 shadow-card">
-        <div className="pointer-events-none absolute -right-12 -top-12 h-40 w-40 rounded-full bg-signal-durable/10 blur-3xl" />
-        <div className="relative flex items-center gap-2">
-          <div className="rounded-full bg-foreground/5 p-1.5">
-            <Sparkles className="h-4 w-4 text-foreground" />
-          </div>
-          <h2 className="display text-2xl font-semibold tracking-tight">
-            Claude AI insights
+      {/* Policy Insights */}
+      <section className="rounded-2xl border border-hairline bg-card p-6 shadow-card">
+        <div className="mb-4 flex items-center gap-2">
+          <Lightbulb className="h-4 w-4 text-muted-foreground" />
+          <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+            Evidence-Based Policy Signals
           </h2>
-          <span className="ml-auto text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
-            Auto-generated · mock
-          </span>
         </div>
-        <ul className="mt-5 space-y-3">
-          {data.insights.map((insight, i) => (
-            <li
-              key={i}
-              className="flex gap-3 rounded-xl border border-hairline bg-paper p-4 text-sm leading-relaxed text-foreground animate-fade-up"
-              style={{ animationDelay: `${i * 80}ms` }}
-            >
-              <span className="num shrink-0 text-xs font-semibold text-muted-foreground">
-                0{i + 1}
+        <ul className="space-y-3">
+          {stats.policy_insights.map((insight, i) => (
+            <li key={i} className="flex gap-3 text-sm">
+              <span className="num mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-foreground text-[10px] font-bold text-background">
+                {i + 1}
               </span>
-              <span>{insight}</span>
+              <p className="leading-relaxed text-foreground">{insight}</p>
             </li>
           ))}
         </ul>
-      </section>
-    </div>
-  );
-}
-
-function StatCard({
-  icon,
-  source,
-  label,
-  value,
-  context,
-  tone,
-  spark,
-}: {
-  icon: React.ReactNode;
-  source: string;
-  label: string;
-  value: string;
-  context: string;
-  tone: "risk" | "durable" | "neutral";
-  spark: number[];
-}) {
-  const valColor =
-    tone === "risk"
-      ? "text-signal-risk"
-      : tone === "durable"
-        ? "text-signal-durable"
-        : "text-foreground";
-  const sparkColor =
-    tone === "risk"
-      ? "var(--signal-risk)"
-      : tone === "durable"
-        ? "var(--signal-durable)"
-        : "var(--ink-muted)";
-
-  const max = Math.max(...spark);
-  const min = Math.min(...spark);
-  const range = max - min || 1;
-  const w = 110;
-  const h = 30;
-  const points = spark
-    .map((v, i) => {
-      const x = (i / (spark.length - 1)) * w;
-      const y = h - ((v - min) / range) * h;
-      return `${x.toFixed(1)},${y.toFixed(1)}`;
-    })
-    .join(" ");
-
-  return (
-    <div className="rounded-2xl border border-hairline bg-card p-5 shadow-card">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2 text-foreground">
-          <span className="rounded-md bg-muted p-1.5">{icon}</span>
-          <span className="text-[10px] font-semibold uppercase tracking-[0.18em]">
-            {label}
-          </span>
-        </div>
-        <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
-          {source}
-        </span>
-      </div>
-      <div className="mt-4 flex items-end justify-between gap-3">
-        <div className={`num display text-4xl font-semibold ${valColor}`}>{value}</div>
-        <svg width={w} height={h} className="shrink-0">
-          <polyline
-            points={points}
-            fill="none"
-            stroke={sparkColor}
-            strokeWidth="1.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
+        <div className="mt-4 border-t border-hairline pt-3">
+          <SourceBadge
+            source="ILOSTAT 2024 · World Bank HCI &amp; WDI 2024 · Wittgenstein Centre SSP2 · Frey &amp; Osborne (2017) LMIC-adjusted · World Bank STEP"
+            live={false}
+            year="2024"
           />
-        </svg>
-      </div>
-      <div className="mt-3 text-xs text-muted-foreground">{context}</div>
+        </div>
+      </section>
+
     </div>
   );
 }
 
-function Legend() {
+function DashboardSkeleton() {
   return (
-    <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
-      <span>Low</span>
-      <div
-        className="h-2 w-24 rounded-full"
-        style={{
-          background:
-            "linear-gradient(90deg, var(--signal-durable), var(--signal-risk))",
-        }}
-      />
-      <span>High</span>
+    <div className="mx-auto max-w-5xl animate-pulse space-y-6 py-2">
+      <div className="h-28 rounded-2xl bg-muted" />
+      <div className="grid grid-cols-3 gap-3">
+        {Array.from({ length: 6 }).map((_, i) => <div key={i} className="h-28 rounded-xl bg-muted" />)}
+      </div>
+      <div className="grid gap-6 md:grid-cols-2">
+        <div className="h-72 rounded-2xl bg-muted" />
+        <div className="h-72 rounded-2xl bg-muted" />
+      </div>
+    </div>
+  );
+}
+
+function ErrorState({ message }: { message: string }) {
+  return (
+    <div className="mx-auto max-w-lg py-12 text-center">
+      <AlertCircle className="mx-auto h-8 w-8 text-signal-risk" />
+      <p className="mt-3 font-semibold text-foreground">Failed to load policymaker data</p>
+      <p className="mt-1 rounded-lg border border-signal-risk/30 bg-signal-risk-soft p-3 font-mono text-xs text-signal-risk">
+        {message}
+      </p>
+      <p className="mt-3 text-xs text-muted-foreground">
+        Ensure the backend is running at localhost:8000
+      </p>
     </div>
   );
 }

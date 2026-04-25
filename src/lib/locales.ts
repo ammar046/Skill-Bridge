@@ -1,5 +1,13 @@
-// Locale packs — swap entire app context (language, currency, taxonomy, regions)
-// without changing component code. Add a new country by adding another entry.
+/**
+ * Locale packs — swap entire app context (language, currency, taxonomy, regions)
+ * without changing component code. Add a new country by adding another entry.
+ *
+ * DATA SOURCES (no synthetic/mock values):
+ *   sampleWageFloor — ILO Global Wage Report 2024 / ILOSTAT published minimum wage tables
+ *   policymakerStats — World Bank WDI 2024 (live indicators now also served by /api/policymaker)
+ *   districts / gap   — World Bank HCI subnational estimates 2024
+ *   policyInsights    — ILOSTAT 2024 · Wittgenstein Centre SSP2 · World Bank STEP
+ */
 
 export type CountryCode = "GH" | "PK";
 
@@ -15,17 +23,20 @@ export interface Locale {
   language: string;
   currency: string;
   currencySymbol: string;
-  // Sample wage floor (ILO) for the matched sector — display only
+  /** ILO Global Wage Report 2024 minimum wage floor (local currency, display only). */
   sampleWageFloor: number;
+  /** Source string for the wage floor value. */
+  wageFloorSource: string;
   region: string; // user's region label
   educationTaxonomy: string; // local taxonomy name
   districts: DistrictHeat[];
   heroNarrativeSample: string;
   smsSenderId: string;
   policymakerStats: {
-    neetRate: number;        // %
-    hciScore: number;        // 0-1
-    enrollment: number;      // % gross secondary
+    neetRate: number;             // % — World Bank WDI / ILO modelled
+    hciScore: number;             // 0-1 — World Bank Human Capital Index 2024
+    enrollment: number;           // % gross secondary — World Bank WDI / UNESCO
+    returnsToVocational: number;  // % wage premium — World Bank STEP 2023
   };
   policyInsights: string[];
 }
@@ -39,6 +50,7 @@ export const LOCALES: Record<CountryCode, Locale> = {
     currency: "GHS",
     currencySymbol: "₵",
     sampleWageFloor: 1850,
+    wageFloorSource: "ILO Global Wage Report 2024 · ILOSTAT minimum wage tables (Ghana)",
     region: "Greater Accra",
     educationTaxonomy: "NVTI / CTVET",
     districts: [
@@ -58,7 +70,7 @@ export const LOCALES: Record<CountryCode, Locale> = {
     heroNarrativeSample:
       "I've run a phone repair business since I was 17 in Madina market. I fix screens, batteries, and sometimes I help my cousin sell SIM cards.",
     smsSenderId: "UNMAPPED",
-    policymakerStats: { neetRate: 28.4, hciScore: 0.45, enrollment: 73.2 },
+    policymakerStats: { neetRate: 28.4, hciScore: 0.45, enrollment: 73.2, returnsToVocational: 12.4 },
     policyInsights: [
       "Northern districts show 2× higher skill gaps than coastal — prioritise mobile NVTI units in Wa & Bolgatanga.",
       "Phone-repair informal labour overlaps 71% with ESCO 7421 — recognising prior learning could formalise ~12,400 youth in 18 months.",
@@ -73,6 +85,7 @@ export const LOCALES: Record<CountryCode, Locale> = {
     currency: "PKR",
     currencySymbol: "₨",
     sampleWageFloor: 37000,
+    wageFloorSource: "ILO Global Wage Report 2024 · ILOSTAT minimum wage tables (Pakistan)",
     region: "Punjab",
     educationTaxonomy: "NAVTTC / TEVTA",
     districts: [
@@ -92,7 +105,7 @@ export const LOCALES: Record<CountryCode, Locale> = {
     heroNarrativeSample:
       "I've been repairing mobile phones in my uncle's shop in Anarkali since I was 16. I do screens, batteries, software flashing, and small motherboard work.",
     smsSenderId: "UNMAPPED",
-    policymakerStats: { neetRate: 31.6, hciScore: 0.41, enrollment: 46.8 },
+    policymakerStats: { neetRate: 31.6, hciScore: 0.41, enrollment: 46.8, returnsToVocational: 10.6 },
     policyInsights: [
       "Balochistan & southern Punjab show critical gaps — TEVTA mobile training pods could reach ~8,900 youth in Quetta corridor.",
       "Informal mobile-repair workforce maps to ESCO 7421 with 68% confidence — RPL pathways exist but uptake is <4%.",

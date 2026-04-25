@@ -9,10 +9,12 @@ import {
   Wallet,
   MapPin,
   Clock,
+  GraduationCap,
 } from "lucide-react";
 import { useApp } from "@/context/AppContext";
 import { getOpportunities, searchProviders } from "@/lib/api";
 import type { OpportunityMatch, TrainingProvider } from "@/types/api";
+import { SourceBadge } from "@/components/SourceBadge";
 import { formatWage } from "@/lib/locales";
 import { LiveMarketSignals } from "@/components/LiveMarketSignals";
 
@@ -179,7 +181,7 @@ function Opportunities() {
                 </div>
 
                 {/* Growth */}
-                <div className="col-span-12 md:col-span-2">
+                <div className="col-span-6 md:col-span-2">
                   <div className="text-[10px] uppercase tracking-wider text-muted-foreground">
                     Sector /yr
                   </div>
@@ -196,6 +198,39 @@ function Opportunities() {
                     )}
                     {positive ? "+" : ""}
                     {m.sectorGrowthPct.toFixed(1)}%
+                  </div>
+                </div>
+
+                {/* Returns to Education — World Bank STEP */}
+                <div className="col-span-6 md:col-span-2">
+                  <div className="flex items-center gap-1 text-[10px] uppercase tracking-wider text-muted-foreground">
+                    <GraduationCap className="h-3 w-3" /> Earning Potential
+                  </div>
+                  <div className="num mt-1 text-2xl font-semibold text-signal-durable">
+                    +{locale.policymakerStats.returnsToVocational ?? "—"}%
+                  </div>
+                  <p className="mt-1 text-[9px] leading-tight text-muted-foreground">
+                    with vocational training
+                  </p>
+                  <div className="mt-1 inline-flex items-center gap-1 rounded-full border border-signal-durable/30 bg-signal-durable-soft px-1.5 py-0.5 text-[8px] font-semibold uppercase tracking-wider text-signal-durable">
+                    Source: World Bank WDI 2023
+                  </div>
+                </div>
+
+                {/* Econometric attribution footer */}
+                <div className="col-span-12 border-t border-hairline pt-3">
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5">
+                    {m.ilostatSource && (
+                      <SourceBadge source={m.ilostatSource} live={false} year="2024" />
+                    )}
+                    {m.returnsToEducationNote && (
+                      <p className="text-[10px] text-muted-foreground">{m.returnsToEducationNote}</p>
+                    )}
+                    <SourceBadge
+                      source="World Bank STEP Skills Measurement Programme 2023 · ILO sector employment projections 2024"
+                      live={false}
+                      year="2023–2024"
+                    />
                   </div>
                 </div>
               </li>

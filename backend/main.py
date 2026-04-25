@@ -1,8 +1,12 @@
+import os
+from pathlib import Path
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 
-load_dotenv()
+# Load .env from the backend/ directory regardless of where uvicorn is launched from
+load_dotenv(dotenv_path=Path(__file__).parent / ".env")
 
 try:
     from .routers.api import router as api_router

@@ -2,7 +2,7 @@
 // Today they are produced by lib/api.ts from seeded data + the mock skills
 // engine; tomorrow point lib/api.ts at the real server.
 
-export type SkillClass = "durable" | "at_risk";
+export type SkillClass = "durable" | "at_risk" | "transitioning";
 
 export interface Skill {
   id: string;
@@ -13,6 +13,9 @@ export interface Skill {
   classification: SkillClass;
   confidence: number;       // 0-1
   sourceQuote: string;      // verbatim slice that produced this skill
+  freyOsborneScore?: number;      // 0-1 LMIC-adjusted automation probability
+  iloTaskType?: string;           // non_routine_cognitive | routine_cognitive | manual_physical | mixed
+  resilienceNote?: string;        // ILO/Frey-Osborne explanation
 }
 
 export interface UserProfile {
@@ -20,6 +23,7 @@ export interface UserProfile {
   name: string;
   age: number | null;
   region: string;
+  userCity: string;   // city extracted from narrative by Gemini
   rawNarrative: string;
   skills: Skill[];
   createdAt: string;
@@ -45,6 +49,8 @@ export interface OpportunityMatch {
   iloWageFloor: number;      // local currency per month
   sectorGrowthPct: number;   // signed annual %
   requiredSkills: string[];
+  ilostatSource?: string;
+  returnsToEducationNote?: string;
 }
 
 export interface TrainingProvider {
@@ -55,6 +61,44 @@ export interface TrainingProvider {
   durationWeeks: number;
   url: string;
 }
+
+export interface IndicatorValue {
+  value: number | null;
+  source: string;
+  year: string | null;
+  live: boolean;
+  label: string;
+  available: boolean;
+}
+
+export interface PolicymakerLiveStats {
+  locale_code: string;
+  country: string;
+  context: string;
+  fetched_at: string;
+  live_indicators_count: number;
+  hci_score: IndicatorValue;
+  gross_secondary_enrollment_pct: IndicatorValue;
+  internet_penetration_pct: IndicatorValue;
+  neet_rate_pct: IndicatorValue;
+  vulnerable_employment_pct: IndicatorValue;
+  gdp_per_capita_ppp: IndicatorValue;
+  output_per_worker_usd: IndicatorValue;
+  wage_floor_local: IndicatorValue;
+  wage_floor_usd_ppp: IndicatorValue;
+  automation_delay_years: IndicatorValue;
+  wittgenstein_note: string;
+  wittgenstein_source: string;
+  frey_osborne_calibration: string;
+  tvet_name: string;
+  rpl_uptake_pct: number;
+  districts: Array<{ name: string; skill_gap: number; hci_local: number; neet_pct: number }>;
+  policy_insights: string[];
+  top_growth_sectors: Array<{ sector: string; growth_pct: number; demand_gap_pct: number; source: string }>;
+}
+
+// Keep for backward compat
+export interface PolicymakerLocaleStats extends PolicymakerLiveStats {}
 
 export interface MarketSignal {
   category: string;

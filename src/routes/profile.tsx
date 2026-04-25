@@ -3,6 +3,7 @@ import { useEffect } from "react";
 import { ArrowRight, Quote, Sparkles } from "lucide-react";
 import { useApp } from "@/context/AppContext";
 import { SignalPill } from "@/components/SignalPill";
+import { SkillBadge } from "@/components/SkillBadge";
 import type { Skill } from "@/types/api";
 
 export const Route = createFileRoute("/profile")({
@@ -147,13 +148,20 @@ function SkillCard({ skill: s, index }: { skill: Skill; index: number }) {
         <span className="italic">"{s.sourceQuote}"</span>
       </div>
 
+      {/* Explainability badge — click for ILO/Frey-Osborne breakdown */}
+      <div className="mt-3">
+        <SkillBadge skill={s} />
+      </div>
+
       <div className="mt-3 flex items-center justify-between border-t border-hairline pt-3">
         <span className="num text-[10px] uppercase tracking-wider text-muted-foreground">
           ISCO-08 · {s.iscoCode}
         </span>
-        <span className="num truncate text-[10px] text-muted-foreground">
-          {s.escoUri}
-        </span>
+        {s.iloTaskType && (
+          <span className="text-[10px] text-muted-foreground capitalize">
+            {s.iloTaskType.replace(/_/g, " ")}
+          </span>
+        )}
       </div>
     </li>
   );
@@ -164,7 +172,7 @@ function ConfidenceRing({
   kind,
 }: {
   value: number;
-  kind: "durable" | "at_risk";
+  kind: "durable" | "at_risk" | "transitioning";
 }) {
   const r = 22;
   const c = 2 * Math.PI * r;

@@ -1,21 +1,16 @@
-ILO_LOCALE_SIGNALS: dict[str, dict[str, str]] = {
-    "gh": {
-        "wage_floor": "GHS 1850",
-        "growth_percent": "+3.8%",
-    },
-    "pk": {
-        "wage_floor": "PKR 35000",
-        "growth_percent": "+2.9%",
-    },
-}
+"""
+DEPRECATED — All econometric data now served from backend/config/locales.json
+via backend/config/loader.py and live World Bank WDI via backend/services/institutional_data.py.
 
+This file is kept only to avoid breaking any import that has not yet been migrated.
+Do NOT add new data here.
+"""
 
-def get_locale_signal(locale: str) -> dict[str, str]:
-    locale_key = (locale or "").strip().lower()
-    return ILO_LOCALE_SIGNALS.get(
-        locale_key,
-        {
-            "wage_floor": "Local benchmark unavailable",
-            "growth_percent": "N/A",
-        },
-    )
+# Legacy stub — no synthetic values
+def get_locale_signal(locale: str) -> dict:  # noqa: ARG001
+    """
+    DEPRECATED. Use config.loader.get_econometric_signal() instead.
+    Returns an empty dict so callers surface an explicit missing-data error
+    rather than silently using synthetic values.
+    """
+    return {}

@@ -95,7 +95,7 @@ function Index() {
 
             <div className="mt-5 space-y-4">
               <SignalRow
-                label="ILO wage floor · Electronics tech"
+                label={`ILO wage floor · ${locale.wageFloorSource.split("·")[0].trim()}`}
                 value={`${locale.currencySymbol} ${locale.sampleWageFloor.toLocaleString()}`}
                 unit="/mo"
                 delta="+3.4%"
