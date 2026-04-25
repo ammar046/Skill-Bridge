@@ -1,6 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { ArrowRight, Sparkles, AlertTriangle, Shield, Activity } from "lucide-react";
+import { t } from "@/lib/i18n";
 import {
   Area,
   AreaChart,
@@ -20,7 +21,7 @@ export const Route = createFileRoute("/readiness")({
 });
 
 function Readiness() {
-  const { profile, locale } = useApp();
+  const { profile, locale, uiLocale } = useApp();
   const navigate = useNavigate();
   const [report, setReport] = useState<ReadinessReport | null>(null);
 
@@ -37,7 +38,7 @@ function Readiness() {
       <div className="flex flex-col items-center justify-center py-24 text-sm text-muted-foreground">
         <div className="flex items-center gap-2">
           <Activity className="h-4 w-4 animate-pulse text-signal-durable" />
-          Calibrating Frey-Osborne for {locale.country}…
+          {t("readiness.calibrating", uiLocale)}
         </div>
       </div>
     );
@@ -60,14 +61,13 @@ function Readiness() {
     <div className="space-y-8 py-2">
       <header className="border-b border-hairline pb-8 animate-fade-up">
         <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">
-          AI readiness & displacement lens
+          {t("readiness.page_label", uiLocale)}
         </p>
         <h1 className="display mt-2 text-4xl font-semibold tracking-tight text-foreground md:text-5xl text-balance">
-          How automation will touch your work.
+          {t("readiness.title", uiLocale)}
         </h1>
         <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-          Frey-Osborne (2017) probabilities adjusted for LMIC informal-sector weighting,
-          plotted against Wittgenstein Centre projections for {locale.region}.
+          {t("readiness.sub", uiLocale)}
         </p>
       </header>
 
@@ -76,7 +76,7 @@ function Readiness() {
         <div className="md:col-span-5 rounded-2xl border border-hairline bg-card p-6 shadow-card animate-fade-up">
           <div className="flex items-center justify-between">
             <h2 className="text-[10px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">
-              Automation risk score
+              {t("readiness.risk_score_label", uiLocale)}
             </h2>
             <span
               className={
@@ -109,7 +109,7 @@ function Readiness() {
         <div className="md:col-span-7 rounded-2xl border border-hairline bg-card p-6 shadow-card animate-fade-up [animation-delay:80ms]">
           <div className="flex items-center justify-between">
             <h2 className="text-[10px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">
-              Wittgenstein demand trend · 2025–2035
+              {t("readiness.demand_trend_label", uiLocale)}
             </h2>
             <span className="num text-[10px] uppercase tracking-wider text-muted-foreground">
               {locale.region} · index 100 = today
@@ -185,7 +185,7 @@ function Readiness() {
           </div>
           <div className="flex-1">
             <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-signal-durable">
-              Resilience suggestion · UNMAPPED engine
+              {t("readiness.resilience_label", uiLocale)} · UNMAPPED
             </p>
             <h3 className="display mt-2 text-2xl font-semibold leading-tight tracking-tight text-foreground md:text-3xl">
               Learn{" "}
@@ -210,7 +210,7 @@ function Readiness() {
           to="/opportunities"
           className="group inline-flex items-center gap-2 rounded-full bg-foreground px-5 py-2.5 text-sm font-semibold text-background shadow-card transition-all hover:translate-y-[-1px]"
         >
-          See real opportunities{" "}
+          {t("readiness.view_opps_btn", uiLocale)}{" "}
           <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
         </Link>
       </div>

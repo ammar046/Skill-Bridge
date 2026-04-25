@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowRight, Wifi, ShieldCheck, BarChart3, Quote } from "lucide-react";
 import { useApp } from "@/context/AppContext";
+import { t } from "@/lib/i18n";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -17,7 +18,7 @@ export const Route = createFileRoute("/")({
 });
 
 function Index() {
-  const { locale, profile } = useApp();
+  const { locale, profile, uiLocale } = useApp();
   return (
     <div className="space-y-16 py-2 md:space-y-24">
       {/* HERO — editorial broadsheet */}
@@ -25,13 +26,13 @@ function Index() {
         <div className="md:col-span-7 animate-fade-up">
           <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">
             <span className="h-px w-8 bg-foreground" />
-            Vol. 01 · Issue 01 · {locale.country}
+            {t("home.hero_eyebrow", uiLocale)} · {locale.country}
           </div>
 
           <h1 className="display mt-5 text-[44px] font-semibold leading-[0.95] tracking-tight text-foreground text-balance md:text-[76px]">
-            Make informal skills{" "}
+            {t("home.hero_title_1", uiLocale)}{" "}
             <em className="not-italic relative">
-              economically
+              {t("home.hero_title_em", uiLocale)}
               <svg
                 viewBox="0 0 200 14"
                 className="absolute -bottom-1 left-0 h-2 w-full text-signal-durable"
@@ -47,13 +48,11 @@ function Index() {
                 />
               </svg>
             </em>{" "}
-            legible.
+            {t("home.hero_title_2", uiLocale)}
           </h1>
 
           <p className="mt-6 max-w-xl text-base leading-relaxed text-muted-foreground text-pretty md:text-lg">
-            UNMAPPED turns lived work history into a portable, ESCO-aligned skills
-            profile — with honest opportunity matching and AI-readiness signals
-            calibrated for {locale.country}.
+            {t("home.hero_sub", uiLocale)}
           </p>
 
           <div className="mt-8 flex flex-wrap items-center gap-3">
@@ -61,21 +60,21 @@ function Index() {
               to={profile ? "/profile" : "/onboarding"}
               className="group inline-flex items-center gap-2 rounded-full bg-foreground px-6 py-3 text-sm font-semibold text-background shadow-lift transition-all hover:translate-y-[-1px]"
             >
-              {profile ? "Open my profile" : "Start mapping — 2 minutes"}
+              {profile ? t("home.open_profile_btn", uiLocale) : t("home.start_btn", uiLocale)}
               <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
             </Link>
             <Link
               to="/admin"
               className="inline-flex items-center gap-2 rounded-full border border-hairline bg-background px-5 py-3 text-sm font-medium text-foreground transition-colors hover:bg-muted"
             >
-              Policymaker view
+              {t("home.policymaker_btn", uiLocale)}
             </Link>
           </div>
 
           <div className="mt-10 grid grid-cols-3 gap-px overflow-hidden rounded-xl border border-hairline bg-hairline">
-            <Metric n="1.6B" label="Informal workers globally" />
-            <Metric n="71%" label="Of African employment" />
-            <Metric n="0" label="Globally portable IDs" tone="risk" />
+            <Metric n="1.6B" label={t("home.metric_workers", uiLocale)} />
+            <Metric n="71%" label={t("home.metric_africa", uiLocale)} />
+            <Metric n="0" label={t("home.metric_ids", uiLocale)} tone="risk" />
           </div>
         </div>
 
@@ -86,7 +85,7 @@ function Index() {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
                 <span className="h-1.5 w-1.5 animate-pulse-dot rounded-full bg-signal-durable" />
-                Live econometric signals
+                {t("home.live_signals", uiLocale)}
               </div>
               <span className="num text-[10px] font-medium text-muted-foreground">
                 {locale.currency}
@@ -138,40 +137,24 @@ function Index() {
         <div className="mx-auto max-w-3xl px-2 text-center">
           <Quote className="mx-auto h-6 w-6 text-signal-durable" />
           <blockquote className="display mt-4 text-2xl font-medium leading-snug tracking-tight text-foreground text-balance md:text-3xl">
-            "I've run a phone repair business since I was 17. No certificate.
-            No bank knows my skill. No employer can see my track record."
+            "{t("home.quote_text", uiLocale)}"
           </blockquote>
           <figcaption className="mt-4 text-xs uppercase tracking-[0.2em] text-muted-foreground">
-            — Amara, 22 · Madina market, Accra
+            {t("home.quote_attr", uiLocale)}
           </figcaption>
         </div>
       </section>
 
       {/* Pillars */}
       <section className="grid gap-4 md:grid-cols-3">
-        <FeatureCard
-          n="01"
-          icon={<Wifi className="h-4 w-4" />}
-          title="Built for 2G"
-        >
-          System fonts, no hero images, offline-first PWA logic. Works on a shared
-          phone in Madina market or Anarkali bazaar.
+        <FeatureCard n="01" icon={<Wifi className="h-4 w-4" />} title={t("home.pillar1_title", uiLocale)}>
+          {t("home.pillar1_body", uiLocale)}
         </FeatureCard>
-        <FeatureCard
-          n="02"
-          icon={<ShieldCheck className="h-4 w-4" />}
-          title="Honest matching"
-        >
-          Every opportunity surfaces ILO wage floors and sector growth — no
-          inflated promises, no extractive funnels.
+        <FeatureCard n="02" icon={<ShieldCheck className="h-4 w-4" />} title={t("home.pillar2_title", uiLocale)}>
+          {t("home.pillar2_body", uiLocale)}
         </FeatureCard>
-        <FeatureCard
-          n="03"
-          icon={<BarChart3 className="h-4 w-4" />}
-          title="Policy-grade data"
-        >
-          Aggregate skill-gap heatmaps powered by ILO, World Bank, UNESCO, and
-          Wittgenstein 2025–2035 projections.
+        <FeatureCard n="03" icon={<BarChart3 className="h-4 w-4" />} title={t("home.pillar3_title", uiLocale)}>
+          {t("home.pillar3_body", uiLocale)}
         </FeatureCard>
       </section>
 
@@ -181,17 +164,17 @@ function Index() {
         <div className="relative grid gap-6 md:grid-cols-[1.5fr,1fr] md:items-end">
           <div>
             <p className="text-[10px] uppercase tracking-[0.22em] text-background/60">
-              For Amara, for Hassan, for 1.6 billion others
+              {t("home.cta_sub", uiLocale)}
             </p>
             <h2 className="display mt-3 text-3xl font-semibold leading-tight tracking-tight text-balance md:text-5xl">
-              Your work is real. Now make it readable.
+              {t("home.cta_title", uiLocale)}
             </h2>
           </div>
           <Link
             to={profile ? "/profile" : "/onboarding"}
             className="group inline-flex items-center justify-center gap-2 rounded-full bg-background px-6 py-3 text-sm font-semibold text-foreground transition-transform hover:translate-y-[-1px]"
           >
-            {profile ? "Open my profile" : "Begin onboarding"}
+            {profile ? t("home.open_profile_btn", uiLocale) : t("home.begin_btn", uiLocale)}
             <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
           </Link>
         </div>

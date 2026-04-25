@@ -49,30 +49,28 @@ function Profile() {
       >
         <span className="flex items-start gap-2">
           <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground/70" />
-          <span>
-            Skills classifications use ILO ISCO-08. Automation scores are derived from Frey &amp; Osborne (2013), calibrated for low- and middle-income economies per ILO (2019). Wage data is from ILO Global Wage Report 2024 and ILOSTAT. All scores are indicative.
-          </span>
+          <span>{t("profile.disclaimer", uiLocale)}</span>
         </span>
       </div>
 
       <header className="flex flex-wrap items-end justify-between gap-6 border-b border-hairline pb-8">
         <div className="animate-fade-up">
           <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">
-            Portable skills profile · ESCO-aligned
+            {t("profile.page_label", uiLocale)}
           </p>
           <h1 className="display mt-2 text-4xl font-semibold tracking-tight text-foreground md:text-5xl">
             {profile.name}
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
             {profile.age ? `${profile.age} · ` : ""}
-            {profile.region} · Mapped to {locale.educationTaxonomy}
+            {profile.region} · {t("profile.mapped_to", uiLocale)} {locale.educationTaxonomy}
           </p>
         </div>
         <Link
           to="/readiness"
           className="group inline-flex items-center gap-2 rounded-full bg-foreground px-5 py-2.5 text-sm font-semibold text-background shadow-card transition-all hover:translate-y-[-1px]"
         >
-          AI readiness lens{" "}
+          {t("profile.ai_lens_btn", uiLocale)}{" "}
           <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
         </Link>
       </header>
@@ -80,10 +78,14 @@ function Profile() {
       {/* Gender wage callout */}
       {isFemale && (
         <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-          <p className="font-semibold text-amber-900">Gender wage adjustment applied</p>
+          <p className="font-semibold text-amber-900">
+            {uiLocale === "ur" ? "جنس کے مطابق اجرت کا حساب لگایا گیا" : "Gender wage adjustment applied"}
+          </p>
           <p className="mt-1 text-[13px]">
-            Wage floor shown is ILO-adjusted for gender. Women in {locale.country} earn approximately{" "}
-            <strong>{gapPct}% less</strong> than the regional average.{" "}
+            {uiLocale === "ur"
+              ? `${locale.country} میں خواتین اوسطاً ${gapPct}% کم کماتی ہیں۔ یہ ILO کے اعداد کے مطابق ہے۔`
+              : `Wage floor shown is ILO-adjusted for gender. Women in ${locale.country} earn approximately `}
+            {uiLocale !== "ur" && <><strong>{gapPct}% less</strong> than the regional average.</>}{" "}
             <span className="inline-flex items-center gap-1 rounded border border-amber-300 bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-amber-700">
               Source: {locale.genderWageGapSource}
             </span>
@@ -117,10 +119,10 @@ function Profile() {
       {/* Wittgenstein projections — "Your region's future" */}
       <section className="rounded-2xl border border-hairline bg-paper p-6">
         <h2 className="text-[10px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">
-          Your region's future
+          {t("profile.region_future", uiLocale)}
         </h2>
         <p className="display mt-2 text-xl font-semibold tracking-tight text-foreground">
-          Secondary education enrollment projections
+          {t("profile.enrollment_proj", uiLocale)}
         </p>
 
         {/* Inline enrollment bar chart */}
@@ -149,7 +151,7 @@ function Profile() {
             Source: {witt.source}
           </span>
           <p className="text-[13px] text-muted-foreground">
-            More workers with credentials means your undocumented skills matter more now. A Bridge Pass helps you stand out.
+            {t("profile.witt_implication", uiLocale)}
           </p>
         </div>
       </section>
@@ -193,6 +195,7 @@ function Stat({
 }
 
 function SkillCard({ skill: s, index }: { skill: Skill; index: number }) {
+  const { uiLocale } = useApp();
   const isDurable = s.classification === "durable";
   return (
     <li
@@ -213,7 +216,7 @@ function SkillCard({ skill: s, index }: { skill: Skill; index: number }) {
               {s.label}
             </h3>
             <SignalPill kind={s.classification}>
-              {isDurable ? "Durable" : "At risk"}
+              {isDurable ? t("profile.durable", uiLocale) : t("profile.at_risk", uiLocale)}
             </SignalPill>
           </div>
           <p className="mt-1 text-xs text-muted-foreground">

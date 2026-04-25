@@ -148,8 +148,8 @@ function Onboarding() {
   return (
     <div className="mx-auto max-w-2xl py-2">
       <div className="mb-6 flex items-center justify-between">
-        <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">
-          Step {idx + 1} of {STEPS.length} · Skills intake
+          <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">
+          {t("onboarding.step_label", uiLocale)} {idx + 1} / {STEPS.length} · {t("onboarding.skills_intake", uiLocale)}
         </p>
         <p className="num text-[10px] text-muted-foreground">{Math.round(progress)}%</p>
       </div>
@@ -261,8 +261,7 @@ function Onboarding() {
         {phase.status === "error" && (
           <Bubble side="agent">
             <p className="text-sm text-foreground">
-              Your narrative has been saved offline. Fix the issue above and try again,
-              or edit your narrative below.
+              {t("onboarding.error_retry", uiLocale)}
             </p>
           </Bubble>
         )}

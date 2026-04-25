@@ -6,6 +6,7 @@ import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 import { useApp } from "@/context/AppContext";
 import { SignalPill } from "@/components/SignalPill";
+import { t } from "@/lib/i18n";
 import {
   Dialog,
   DialogContent,
@@ -19,7 +20,7 @@ export const Route = createFileRoute("/skills-card")({
 });
 
 function SkillsCard() {
-  const { profile, locale } = useApp();
+  const { profile, locale, uiLocale } = useApp();
   const navigate = useNavigate();
   const cardRef = useRef<HTMLDivElement>(null);
   const [qrOpen, setQrOpen] = useState(false);
@@ -179,14 +180,13 @@ function SkillsCard() {
     <div className="mx-auto max-w-3xl space-y-8 py-2">
       <header className="border-b border-hairline pb-8 animate-fade-up">
         <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">
-          Exportable skills card
+          {t("card.page_label", uiLocale)}
         </p>
         <h1 className="display mt-2 text-4xl font-semibold tracking-tight text-foreground md:text-5xl text-balance">
-          Carry your work with you.
+          {t("card.title", uiLocale)}
         </h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          A digital ID for the informal economy. Share via PDF, QR, or SMS — works
-          even on a feature phone.
+          {t("card.sub", uiLocale)}
         </p>
       </header>
 
@@ -232,7 +232,7 @@ function SkillsCard() {
             </div>
             <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
               <ShieldCheck className="h-3 w-3 text-signal-durable" />
-              <span>Verified · ESCO-aligned</span>
+              <span>{t("card.verified_label", uiLocale)}</span>
             </div>
           </div>
         </div>
@@ -241,7 +241,7 @@ function SkillsCard() {
           {/* Holder block */}
           <div>
             <div className="text-[10px] uppercase tracking-[0.22em] text-muted-foreground">
-              Holder
+              {t("card.holder", uiLocale)}
             </div>
             <div className="display mt-1 text-3xl font-semibold tracking-tight text-foreground md:text-4xl">
               {profile.name}
@@ -254,7 +254,7 @@ function SkillsCard() {
             <dl className="mt-5 grid grid-cols-3 gap-3 border-y border-hairline py-4">
               <div>
                 <dt className="text-[10px] uppercase tracking-wider text-muted-foreground">
-                  Issued
+                  {t("card.issued", uiLocale)}
                 </dt>
                 <dd className="num mt-0.5 text-xs font-semibold text-foreground">
                   {new Date(profile.createdAt).toLocaleDateString()}
@@ -262,7 +262,7 @@ function SkillsCard() {
               </div>
               <div>
                 <dt className="text-[10px] uppercase tracking-wider text-muted-foreground">
-                  Credential ID
+                  {t("card.credential_id", uiLocale)}
                 </dt>
                 <dd className="num mt-0.5 text-xs font-semibold text-foreground">
                   {profile.passId ? `UNMP-${profile.passId}` : profile.id.slice(-8).toUpperCase()}
@@ -270,7 +270,7 @@ function SkillsCard() {
               </div>
               <div>
                 <dt className="text-[10px] uppercase tracking-wider text-muted-foreground">
-                  Standard
+                  {t("card.standard", uiLocale)}
                 </dt>
                 <dd className="num mt-0.5 text-xs font-semibold text-foreground">
                   ESCO/ISCO-08
@@ -296,14 +296,14 @@ function SkillsCard() {
               ))}
             </div>
             <p className="mt-2 text-center text-[10px] uppercase tracking-wider text-muted-foreground">
-              Tap "Share via QR" for verifiable code
+              {t("card.qr_hint", uiLocale)}
             </p>
           </div>
         </div>
 
         <div className="relative border-t border-hairline px-6 pb-6 pt-5 md:px-8 md:pb-8">
           <div className="text-[10px] uppercase tracking-[0.22em] text-muted-foreground">
-            Validated skills · {profile.skills.length}
+            {t("card.validated_skills", uiLocale)} · {profile.skills.length}
           </div>
           <ul className="mt-3 grid gap-2 sm:grid-cols-2">
             {profile.skills.map((s) => (
@@ -320,7 +320,7 @@ function SkillsCard() {
                   </div>
                 </div>
                 <SignalPill kind={s.classification}>
-                  {s.classification === "durable" ? "Durable" : "At risk"}
+                  {s.classification === "durable" ? t("profile.durable", uiLocale) : t("profile.at_risk", uiLocale)}
                 </SignalPill>
               </li>
             ))}
@@ -340,23 +340,23 @@ function SkillsCard() {
 
       <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
         <ActionBtn onClick={downloadPdf} icon={<Download className="h-4 w-4" />}>
-          Download PDF
+          {t("card.download_pdf", uiLocale)}
         </ActionBtn>
         <ActionBtn onClick={openQr} icon={<QrCode className="h-4 w-4" />}>
-          Share via QR
+          {t("card.share_qr", uiLocale)}
         </ActionBtn>
         <ActionBtn
           onClick={() => setSmsOpen(true)}
           icon={<MessageSquare className="h-4 w-4" />}
         >
-          Send SMS summary
+          {t("card.send_sms", uiLocale)}
         </ActionBtn>
       </div>
 
       <Dialog open={qrOpen} onOpenChange={setQrOpen}>
         <DialogContent className="max-w-sm">
           <DialogHeader>
-            <DialogTitle>Share via QR</DialogTitle>
+            <DialogTitle>{t("card.qr_title", uiLocale)}</DialogTitle>
           </DialogHeader>
           <div className="flex flex-col items-center gap-3 py-2">
             {qrUrl && (
@@ -369,7 +369,7 @@ function SkillsCard() {
               />
             )}
             <p className="text-center text-xs text-muted-foreground">
-              Anyone can scan this to verify {profile.name}'s validated skills offline.
+              {t("card.qr_verify_hint", uiLocale)}
             </p>
           </div>
         </DialogContent>
@@ -378,12 +378,12 @@ function SkillsCard() {
       <Dialog open={smsOpen} onOpenChange={setSmsOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Send SMS summary</DialogTitle>
+            <DialogTitle>{t("card.sms_title", uiLocale)}</DialogTitle>
           </DialogHeader>
           <form onSubmit={sendSms} className="space-y-3">
             <div>
               <label className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
-                Phone number
+                {t("card.sms_phone_label", uiLocale)}
               </label>
               <input
                 value={phone}
@@ -395,7 +395,7 @@ function SkillsCard() {
             </div>
             <div>
               <label className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
-                Preview ({smsBody.length} chars)
+                {t("card.sms_preview_label", uiLocale)} ({smsBody.length})
               </label>
               <pre className="num mt-1 max-h-40 overflow-auto whitespace-pre-wrap rounded-md border border-hairline bg-paper p-3 text-xs text-foreground">
                 {smsBody}

@@ -1,5 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+import { t } from "@/lib/i18n";
 import {
   Search,
   TrendingUp,
@@ -24,7 +25,7 @@ export const Route = createFileRoute("/opportunities")({
 });
 
 function Opportunities() {
-  const { profile, locale } = useApp();
+  const { profile, locale, uiLocale } = useApp();
   const navigate = useNavigate();
   const [matches, setMatches] = useState<OpportunityMatch[]>([]);
   const [matchError, setMatchError] = useState<string | null>(null);
@@ -72,21 +73,20 @@ function Opportunities() {
       <header className="flex flex-wrap items-end justify-between gap-6 border-b border-hairline pb-8 animate-fade-up">
         <div>
           <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">
-            Honest opportunity matching
+            {t("opp.page_label", uiLocale)}
           </p>
           <h1 className="display mt-2 text-4xl font-semibold tracking-tight text-foreground md:text-5xl text-balance">
-            Real roles. Real wages. No spin.
+            {t("opp.title", uiLocale)}
           </h1>
           <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-            Calibrated for {locale.country}. Every card surfaces the ILO wage floor and
-            sector growth — so you can compare on what matters.
+            {locale.country} · {t("opp.sub", uiLocale)}
           </p>
         </div>
         <Link
           to="/skills-card"
           className="group inline-flex items-center gap-2 rounded-full bg-foreground px-5 py-2.5 text-sm font-semibold text-background shadow-card transition-all hover:translate-y-[-1px]"
         >
-          Get my skills card{" "}
+          {t("opp.get_card_btn", uiLocale)}{" "}
           <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
         </Link>
       </header>
@@ -101,14 +101,14 @@ function Opportunities() {
       <section className="overflow-hidden rounded-2xl border border-hairline bg-card shadow-card">
         <div className="flex items-center justify-between border-b border-hairline bg-paper px-5 py-3">
           <h2 className="text-[10px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">
-            Top matches · sorted by fit
+            {t("opp.top_matches", uiLocale)}
           </h2>
           <div className="flex items-center gap-3 text-[10px] uppercase tracking-wider text-muted-foreground">
             <span className="flex items-center gap-1">
-              <span className="h-2 w-2 rounded-sm bg-signal-durable" /> growing
+              <span className="h-2 w-2 rounded-sm bg-signal-durable" /> {t("opp.growing", uiLocale)}
             </span>
             <span className="flex items-center gap-1">
-              <span className="h-2 w-2 rounded-sm bg-signal-risk" /> shrinking
+              <span className="h-2 w-2 rounded-sm bg-signal-risk" /> {t("opp.declining", uiLocale)}
             </span>
           </div>
         </div>
@@ -151,7 +151,7 @@ function Opportunities() {
                 {/* Match score */}
                 <div className="col-span-4 md:col-span-2">
                   <div className="text-[10px] uppercase tracking-wider text-muted-foreground">
-                    Match
+                    {t("opp.match_score", uiLocale)}
                   </div>
                   <div className="num mt-1 text-2xl font-semibold text-foreground">
                     {m.matchScore}%
@@ -167,7 +167,7 @@ function Opportunities() {
                 {/* Wage */}
                 <div className="col-span-8 md:col-span-3">
                   <div className="flex items-center gap-1 text-[10px] uppercase tracking-wider text-muted-foreground">
-                    <Wallet className="h-3 w-3" /> ILO wage floor
+                    <Wallet className="h-3 w-3" /> {t("opp.wage_floor", uiLocale)}
                   </div>
                   <div className="num mt-1 text-2xl font-semibold text-signal-durable">
                     {formatWage(m.iloWageFloor, locale)}
@@ -183,7 +183,7 @@ function Opportunities() {
                 {/* Growth */}
                 <div className="col-span-6 md:col-span-2">
                   <div className="text-[10px] uppercase tracking-wider text-muted-foreground">
-                    Sector /yr
+                    {t("opp.sector_growth", uiLocale)}
                   </div>
                   <div
                     className={
@@ -204,7 +204,7 @@ function Opportunities() {
                 {/* Returns to Education — World Bank STEP */}
                 <div className="col-span-6 md:col-span-2">
                   <div className="flex items-center gap-1 text-[10px] uppercase tracking-wider text-muted-foreground">
-                    <GraduationCap className="h-3 w-3" /> Earning Potential
+                    <GraduationCap className="h-3 w-3" /> {t("opp.earning_potential", uiLocale)}
                   </div>
                   <div className="num mt-1 text-2xl font-semibold text-signal-durable">
                     +{locale.policymakerStats.returnsToVocational ?? "—"}%
@@ -251,7 +251,7 @@ function Opportunities() {
       <section className="rounded-2xl border border-hairline bg-card p-6 shadow-card">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h2 className="display text-2xl font-semibold tracking-tight">
-            Local training providers
+            {t("opp.training_label", uiLocale)}
           </h2>
           <span className="flex items-center gap-1.5 text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
             <span className="h-1.5 w-1.5 animate-pulse-dot rounded-full bg-signal-durable" />
@@ -264,7 +264,7 @@ function Opportunities() {
             <input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder={`e.g. solar in ${locale.region}, mobile repair, IoT…`}
+              placeholder={t("opp.search_placeholder", uiLocale)}
               className="w-full rounded-full border border-hairline bg-background py-2.5 pl-9 pr-3 text-sm outline-none transition-colors focus:border-foreground"
             />
           </div>
@@ -276,7 +276,7 @@ function Opportunities() {
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
               <>
-                <Search className="h-4 w-4" /> Search
+                <Search className="h-4 w-4" /> {t("opp.search_btn", uiLocale)}
               </>
             )}
           </button>
@@ -317,7 +317,7 @@ function Opportunities() {
                   rel="noopener noreferrer"
                   className="inline-flex shrink-0 items-center gap-1 rounded-full border border-hairline bg-background px-3 py-1.5 text-xs font-semibold text-foreground transition-colors hover:bg-muted"
                 >
-                  View <ArrowRight className="h-3 w-3" />
+                  {t("opp.view_btn", uiLocale)} <ArrowRight className="h-3 w-3" />
                 </a>
               ) : (
                 <span className="shrink-0 rounded-full border border-hairline px-3 py-1.5 text-xs text-muted-foreground/50">

@@ -12,6 +12,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { useApp } from "@/context/AppContext";
 import { formatWage } from "@/lib/locales";
+import { t } from "@/lib/i18n";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const { locale, viewMode, profile, uiLocale, setUiLocale, countryCode } = useApp();
@@ -27,11 +28,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }, [isRtl]);
 
   const userNav = [
-    { to: "/", label: "Home" },
-    { to: profile ? "/profile" : "/onboarding", label: profile ? "Profile" : "Start" },
-    { to: "/readiness", label: "AI lens" },
-    { to: "/opportunities", label: "Opportunities" },
-    { to: "/skills-card", label: "Skills card" },
+    { to: "/", label: t("nav.home", uiLocale) },
+    { to: profile ? "/profile" : "/onboarding", label: profile ? t("nav.profile", uiLocale) : t("nav.start", uiLocale) },
+    { to: "/readiness", label: t("nav.ai_lens", uiLocale) },
+    { to: "/opportunities", label: t("nav.opportunities", uiLocale) },
+    { to: "/skills-card", label: t("nav.skills_card", uiLocale) },
   ] as const;
 
   return (
@@ -44,7 +45,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               UN<span className="text-signal-durable">·</span>MAPPED
             </span>
             <span className="hidden text-[10px] font-medium uppercase tracking-[0.18em] text-muted-foreground sm:inline">
-              Open infra · v0.1
+              {t("nav.open_infra", uiLocale)}
             </span>
           </Link>
 
@@ -110,12 +111,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <footer className="border-t border-hairline bg-paper">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-6 text-xs text-muted-foreground">
           <p>
-            <span className="display font-semibold text-foreground">UNMAPPED</span> ·
-            Open infrastructure for the informal economy.
+            <span className="display font-semibold text-foreground">UNMAPPED</span> ·{" "}
+            {t("shell.footer_about", uiLocale)}
           </p>
-          <p className="num">
-            Sources: ILO · World Bank · UNESCO · Wittgenstein Centre · Frey-Osborne (2017)
-          </p>
+          <p className="num">{t("shell.footer_sources", uiLocale)}</p>
         </div>
       </footer>
     </div>
@@ -123,13 +122,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 }
 
 function MobileNav({ profile }: { profile: ReturnType<typeof useApp>["profile"] }) {
+  const { uiLocale } = useApp();
   const location = useLocation();
   const tabs = [
-    { to: "/", label: "Home", icon: "🏠" },
-    { to: profile ? "/profile" : "/onboarding", label: profile ? "Profile" : "Start", icon: "👤" },
-    { to: "/readiness", label: "AI Lens", icon: "⚡" },
-    { to: "/opportunities", label: "Jobs", icon: "🎯" },
-    { to: "/skills-card", label: "Card", icon: "🪪" },
+    { to: "/", label: t("nav.tab_home", uiLocale), icon: "🏠" },
+    { to: profile ? "/profile" : "/onboarding", label: profile ? t("nav.tab_profile", uiLocale) : t("nav.start", uiLocale), icon: "👤" },
+    { to: "/readiness", label: t("nav.tab_ai", uiLocale), icon: "⚡" },
+    { to: "/opportunities", label: t("nav.tab_jobs", uiLocale), icon: "🎯" },
+    { to: "/skills-card", label: t("nav.tab_card", uiLocale), icon: "🪪" },
   ] as const;
 
   return (
