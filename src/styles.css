@@ -4,17 +4,21 @@
 
 @custom-variant dark (&:is(.dark *));
 
-/* UNMAPPED design system — fintech-inspired, light-mode locked.
-   Pure white surfaces, gray-900 ink, electric green for durable/positive
-   signals, alert amber for at-risk/warning signals. System fonts only. */
+/* UNMAPPED — Editorial fintech aesthetic.
+   Pure white surfaces, near-black ink (#0A0A0A), Fraunces display for editorial
+   gravity, system sans for readability, JetBrains Mono for data legibility.
+   Electric green for durable signals, alert amber for at-risk. */
+
+@import url("https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500;9..144,600;9..144,700;9..144,800&family=JetBrains+Mono:wght@400;500;600&display=swap");
 
 @theme inline {
   --font-sans:
     ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue",
     Arial, "Noto Sans", sans-serif;
+  --font-display: "Fraunces", ui-serif, Georgia, "Times New Roman", serif;
   --font-mono:
-    ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono",
-    monospace;
+    "JetBrains Mono", ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+    "Liberation Mono", monospace;
 
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
@@ -52,8 +56,10 @@
   --color-signal-risk-soft: var(--signal-risk-soft);
   --color-ink: var(--ink);
   --color-ink-muted: var(--ink-muted);
+  --color-paper: var(--paper);
   --color-surface-raised: var(--surface-raised);
   --color-grid: var(--grid);
+  --color-hairline: var(--hairline);
 
   --color-chart-1: var(--chart-1);
   --color-chart-2: var(--chart-2);
@@ -65,43 +71,57 @@
 :root {
   --radius: 0.5rem;
 
-  /* Pure white canvas */
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.21 0.034 264.665); /* ~ #111827 gray-900 */
+  /* Paper canvas with subtle warmth */
+  --background: oklch(0.995 0.002 95);          /* near-white, paper warm */
+  --paper: oklch(0.985 0.004 90);
+  --foreground: oklch(0.16 0.01 260);           /* near-black ink */
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.21 0.034 264.665);
+  --card-foreground: oklch(0.16 0.01 260);
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.21 0.034 264.665);
+  --popover-foreground: oklch(0.16 0.01 260);
 
-  --primary: oklch(0.21 0.034 264.665); /* gray-900 buttons */
+  --primary: oklch(0.16 0.01 260);
   --primary-foreground: oklch(1 0 0);
-  --secondary: oklch(0.968 0.007 247.896);
-  --secondary-foreground: oklch(0.21 0.034 264.665);
-  --muted: oklch(0.97 0.005 247);
-  --muted-foreground: oklch(0.45 0.02 257); /* ~ gray-500/600 */
-  --accent: oklch(0.96 0.01 250);
-  --accent-foreground: oklch(0.21 0.034 264.665);
+  --secondary: oklch(0.968 0.006 90);
+  --secondary-foreground: oklch(0.16 0.01 260);
+  --muted: oklch(0.965 0.005 90);
+  --muted-foreground: oklch(0.45 0.015 260);
+  --accent: oklch(0.955 0.012 100);
+  --accent-foreground: oklch(0.16 0.01 260);
   --destructive: oklch(0.62 0.22 25);
   --destructive-foreground: oklch(1 0 0);
-  --border: oklch(0.92 0.005 250);
-  --input: oklch(0.92 0.005 250);
-  --ring: oklch(0.21 0.034 264.665);
+  --border: oklch(0.9 0.006 90);
+  --hairline: oklch(0.85 0.008 90);
+  --input: oklch(0.9 0.006 90);
+  --ring: oklch(0.16 0.01 260);
 
   /* Domain tokens — electric green & alert amber */
-  --signal-durable: oklch(0.7 0.17 162);   /* ~ #10B981 emerald */
-  --signal-durable-soft: oklch(0.96 0.04 162);
-  --signal-risk: oklch(0.78 0.16 75);      /* ~ #F59E0B amber */
-  --signal-risk-soft: oklch(0.97 0.04 90);
-  --ink: oklch(0.21 0.034 264.665);
-  --ink-muted: oklch(0.45 0.02 257);
-  --surface-raised: oklch(0.985 0.003 247);
-  --grid: oklch(0.94 0.004 250);
+  --signal-durable: oklch(0.68 0.18 162);       /* emerald */
+  --signal-durable-soft: oklch(0.96 0.05 162);
+  --signal-risk: oklch(0.76 0.17 70);           /* amber */
+  --signal-risk-soft: oklch(0.97 0.05 85);
+  --ink: oklch(0.16 0.01 260);
+  --ink-muted: oklch(0.45 0.015 260);
+  --surface-raised: oklch(0.985 0.004 90);
+  --grid: oklch(0.93 0.005 90);
 
-  --chart-1: oklch(0.7 0.17 162);   /* durable green */
-  --chart-2: oklch(0.78 0.16 75);   /* risk amber */
-  --chart-3: oklch(0.55 0.18 255);  /* analytic blue */
-  --chart-4: oklch(0.6 0.2 320);    /* magenta */
-  --chart-5: oklch(0.45 0.02 257);  /* neutral */
+  --chart-1: oklch(0.68 0.18 162);
+  --chart-2: oklch(0.76 0.17 70);
+  --chart-3: oklch(0.55 0.18 255);
+  --chart-4: oklch(0.6 0.2 320);
+  --chart-5: oklch(0.45 0.015 260);
+
+  /* Gradients & shadows */
+  --gradient-holo: linear-gradient(
+    135deg,
+    oklch(0.85 0.12 162) 0%,
+    oklch(0.88 0.08 200) 25%,
+    oklch(0.85 0.1 280) 55%,
+    oklch(0.82 0.13 70) 100%
+  );
+  --gradient-paper: linear-gradient(180deg, oklch(1 0 0) 0%, oklch(0.985 0.004 90) 100%);
+  --shadow-card: 0 1px 0 oklch(0.92 0.005 90), 0 8px 24px -12px oklch(0.16 0.01 260 / 0.08);
+  --shadow-lift: 0 1px 0 oklch(0.92 0.005 90), 0 20px 40px -20px oklch(0.16 0.01 260 / 0.18);
 }
 
 @layer base {
@@ -116,7 +136,13 @@
   body {
     background-color: var(--color-background);
     color: var(--color-foreground);
-    font-feature-settings: "cv11", "ss01";
+    font-feature-settings: "cv11", "ss01", "ss02";
+  }
+  /* Editorial display family */
+  .display {
+    font-family: var(--font-display);
+    font-optical-sizing: auto;
+    letter-spacing: -0.02em;
   }
   /* Tabular numerals everywhere we show data */
   .num,
@@ -125,4 +151,89 @@
     font-family: var(--font-mono);
     letter-spacing: -0.01em;
   }
+  /* Hairline divider */
+  .hairline {
+    background-color: var(--color-hairline);
+  }
+}
+
+@layer utilities {
+  .bg-paper {
+    background-color: var(--paper);
+  }
+  .bg-grid-paper {
+    background-image:
+      linear-gradient(var(--grid) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+    background-size: 32px 32px;
+    background-position: -1px -1px;
+  }
+  .shadow-card {
+    box-shadow: var(--shadow-card);
+  }
+  .shadow-lift {
+    box-shadow: var(--shadow-lift);
+  }
+  .bg-holo {
+    background: var(--gradient-holo);
+  }
+  .text-balance {
+    text-wrap: balance;
+  }
+  .text-pretty {
+    text-wrap: pretty;
+  }
+}
+
+/* Animations */
+@keyframes ticker {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+.animate-ticker {
+  animation: ticker 40s linear infinite;
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(1.4); }
+}
+.animate-pulse-dot {
+  animation: pulse-dot 1.6s ease-in-out infinite;
+}
+
+@keyframes draw-line {
+  from { stroke-dashoffset: 1000; }
+  to { stroke-dashoffset: 0; }
+}
+.animate-draw {
+  stroke-dasharray: 1000;
+  animation: draw-line 1.4s ease-out forwards;
+}
+
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-up {
+  animation: fade-up 0.5s ease-out both;
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+.animate-shimmer {
+  background: linear-gradient(90deg, transparent, oklch(1 0 0 / 0.4), transparent);
+  background-size: 200% 100%;
+  animation: shimmer 2.5s infinite;
+}
+
+@keyframes wave {
+  0%, 100% { transform: scaleY(0.4); }
+  50% { transform: scaleY(1); }
+}
+.wave-bar {
+  animation: wave 0.9s ease-in-out infinite;
+  transform-origin: center;
 }
