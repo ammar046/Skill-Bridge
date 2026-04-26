@@ -1,0 +1,232 @@
+[
+  {
+    "locale": "gh",
+    "timestamp": "2026-04-25T08:14:22",
+    "city": "Accra",
+    "gender": "female",
+    "worker_name": "Amara K.",
+    "skills": [
+      {
+        "isco_code": "7421",
+        "label": "Electronics and Telecommunications Installers and Repairers",
+        "automation_score": 0.29,
+        "status": "DURABLE",
+        "ilo_task_type": "non_routine_manual_technical"
+      },
+      {
+        "isco_code": "5221",
+        "label": "Shopkeepers and Stall Holders",
+        "automation_score": 0.44,
+        "status": "TRANSITIONING",
+        "ilo_task_type": "routine_cognitive"
+      }
+    ]
+  },
+  {
+    "locale": "gh",
+    "timestamp": "2026-04-25T09:33:10",
+    "city": "Accra",
+    "gender": "male",
+    "worker_name": "Kwame A.",
+    "skills": [
+      {
+        "isco_code": "7411",
+        "label": "Building Electricians",
+        "automation_score": 0.31,
+        "status": "DURABLE",
+        "ilo_task_type": "non_routine_manual_technical"
+      },
+      {
+        "isco_code": "9333",
+        "label": "Freight Handlers",
+        "automation_score": 0.71,
+        "status": "AT RISK",
+        "ilo_task_type": "routine_manual"
+      }
+    ]
+  },
+  {
+    "locale": "gh",
+    "timestamp": "2026-04-25T10:45:00",
+    "city": "Kumasi",
+    "gender": "female",
+    "worker_name": "Abena M.",
+    "skills": [
+      {
+        "isco_code": "7531",
+        "label": "Tailors, Dressmakers, Furriers and Hatters",
+        "automation_score": 0.35,
+        "status": "DURABLE",
+        "ilo_task_type": "non_routine_manual_technical"
+      },
+      {
+        "isco_code": "5329",
+        "label": "Health Associate Professionals",
+        "automation_score": 0.27,
+        "status": "DURABLE",
+        "ilo_task_type": "non_routine_cognitive"
+      }
+    ]
+  },
+  {
+    "locale": "gh",
+    "timestamp": "2026-04-25T11:20:15",
+    "city": "Kumasi",
+    "gender": "male",
+    "worker_name": "Kofi B.",
+    "skills": [
+      {
+        "isco_code": "4132",
+        "label": "Data Entry Clerks",
+        "automation_score": 0.78,
+        "status": "AT RISK",
+        "ilo_task_type": "routine_cognitive"
+      },
+      {
+        "isco_code": "3323",
+        "label": "Buyers",
+        "automation_score": 0.52,
+        "status": "TRANSITIONING",
+        "ilo_task_type": "routine_cognitive"
+      }
+    ]
+  },
+  {
+    "locale": "gh",
+    "timestamp": "2026-04-25T13:05:44",
+    "city": "Tamale",
+    "gender": null,
+    "worker_name": "Yaw D.",
+    "skills": [
+      {
+        "isco_code": "6111",
+        "label": "Field Crop and Vegetable Growers",
+        "automation_score": 0.57,
+        "status": "TRANSITIONING",
+        "ilo_task_type": "routine_manual"
+      },
+      {
+        "isco_code": "7421",
+        "label": "Electronics and Telecommunications Installers and Repairers",
+        "automation_score": 0.29,
+        "status": "DURABLE",
+        "ilo_task_type": "non_routine_manual_technical"
+      }
+    ]
+  },
+  {
+    "locale": "pk",
+    "timestamp": "2026-04-25T07:10:30",
+    "city": "Karachi",
+    "gender": "female",
+    "worker_name": "Fatima N.",
+    "skills": [
+      {
+        "isco_code": "7531",
+        "label": "Tailors, Dressmakers, Furriers and Hatters",
+        "automation_score": 0.35,
+        "status": "DURABLE",
+        "ilo_task_type": "non_routine_manual_technical"
+      },
+      {
+        "isco_code": "5221",
+        "label": "Shopkeepers and Stall Holders",
+        "automation_score": 0.44,
+        "status": "TRANSITIONING",
+        "ilo_task_type": "routine_cognitive"
+      }
+    ]
+  },
+  {
+    "locale": "pk",
+    "timestamp": "2026-04-25T08:55:12",
+    "city": "Karachi",
+    "gender": "male",
+    "worker_name": "Hassan R.",
+    "skills": [
+      {
+        "isco_code": "7421",
+        "label": "Electronics and Telecommunications Installers and Repairers",
+        "automation_score": 0.29,
+        "status": "DURABLE",
+        "ilo_task_type": "non_routine_manual_technical"
+      },
+      {
+        "isco_code": "7422",
+        "label": "Telecommunications Engineering Technicians",
+        "automation_score": 0.24,
+        "status": "DURABLE",
+        "ilo_task_type": "non_routine_cognitive"
+      }
+    ]
+  },
+  {
+    "locale": "pk",
+    "timestamp": "2026-04-25T09:40:00",
+    "city": "Lahore",
+    "gender": "female",
+    "worker_name": "Zainab Q.",
+    "skills": [
+      {
+        "isco_code": "4132",
+        "label": "Data Entry Clerks",
+        "automation_score": 0.78,
+        "status": "AT RISK",
+        "ilo_task_type": "routine_cognitive"
+      },
+      {
+        "isco_code": "3339",
+        "label": "Business Services Agents",
+        "automation_score": 0.61,
+        "status": "AT RISK",
+        "ilo_task_type": "routine_cognitive"
+      }
+    ]
+  },
+  {
+    "locale": "pk",
+    "timestamp": "2026-04-25T10:15:33",
+    "city": "Lahore",
+    "gender": "male",
+    "worker_name": "Bilal S.",
+    "skills": [
+      {
+        "isco_code": "7411",
+        "label": "Building Electricians",
+        "automation_score": 0.31,
+        "status": "DURABLE",
+        "ilo_task_type": "non_routine_manual_technical"
+      },
+      {
+        "isco_code": "9333",
+        "label": "Freight Handlers",
+        "automation_score": 0.71,
+        "status": "AT RISK",
+        "ilo_task_type": "routine_manual"
+      }
+    ]
+  },
+  {
+    "locale": "pk",
+    "timestamp": "2026-04-25T11:30:20",
+    "city": "Faisalabad",
+    "gender": null,
+    "worker_name": "Ayesha T.",
+    "skills": [
+      {
+        "isco_code": "7531",
+        "label": "Tailors, Dressmakers, Furriers and Hatters",
+        "automation_score": 0.35,
+        "status": "DURABLE",
+        "ilo_task_type": "non_routine_manual_technical"
+      },
+      {
+        "isco_code": "5329",
+        "label": "Health Associate Professionals",
+        "automation_score": 0.27,
+        "status": "DURABLE",
+        "ilo_task_type": "non_routine_cognitive"
+      }
+    ]
+  }
+]

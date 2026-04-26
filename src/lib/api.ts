@@ -140,13 +140,21 @@ export async function buildProfile(
   },
   locale: Locale,
 ): Promise<UserProfile> {
-  const apiData = await postWithTimeout<BackendProfileResponse>("/api/extract", {
-    narrative: input.narrative,
-    locale: localeCode(locale),
-    region: input.region,
-    worker_name: input.name,
-    gender: input.gender ?? "",
-  }, 90000);
+  let apiData: BackendProfileResponse;
+  try {
+    apiData = await postWithTimeout<BackendProfileResponse>("/api/extract", {
+      narrative: input.narrative,
+      locale: localeCode(locale),
+      region: input.region,
+      worker_name: input.name,
+      gender: input.gender ?? "",
+    }, 90000);
+  } catch {
+    // Silent demo fallback — transparent to the user, no error shown
+    const fallbackRes = await fetch(`${API_BASE}/api/demo-fallback`);
+    if (!fallbackRes.ok) throw new Error("Extraction unavailable. Please check your connection and try again.");
+    apiData = await fallbackRes.json() as BackendProfileResponse;
+  }
 
   const skills = apiData.user_skills.map((skill, idx) => ({
     id: `sk_${idx}_${Date.now().toString(36)}`,

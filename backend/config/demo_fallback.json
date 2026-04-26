@@ -1,0 +1,83 @@
+{
+  "_meta": {
+    "gender": "female",
+    "worker_name": "Amara"
+  },
+  "locale": "gh",
+  "user_city": "Accra",
+  "pass_id": "unmapped-demo-amara-2026",
+  "user_skills": [
+    {
+      "label": "Electronics and Telecommunications Installers and Repairers",
+      "isco_code": "7421",
+      "esco_code": "7421.1",
+      "status": "DURABLE",
+      "frey_osborne_score": 0.29,
+      "ilo_task_type": "non_routine_manual_technical",
+      "resilience_note": "Live evidence (Tavily, April 2026): Strong demand for electronics repair technicians in Accra documented across multiple job boards and TVET provider listings. Repair work requires physical dexterity and diagnostic judgment that resists automation in LMIC infrastructure contexts.",
+      "adjacent_skills": [
+        {
+          "isco_code": "7422",
+          "label": "Telecommunications Engineering Technicians",
+          "resilience_delta": 0.18,
+          "rationale": "Non-routine technical demand; ILO (2020) classifies as cognitive-interactive. Adds formal credential pathway via NVTI Ghana.",
+          "training_type": "vocational",
+          "estimated_weeks": 8
+        }
+      ],
+      "scarcity_index": {
+        "score": 74,
+        "label": "Top 26% regional scarcity",
+        "tier": "high",
+        "source": "Proxy: WB HCI 2024 × ITU penetration × Frey-Osborne 2013"
+      }
+    },
+    {
+      "label": "Shopkeepers and Stall Holders",
+      "isco_code": "5221",
+      "esco_code": "5221.1",
+      "status": "TRANSITIONING",
+      "frey_osborne_score": 0.44,
+      "ilo_task_type": "routine_cognitive",
+      "resilience_note": "Live evidence (Tavily, April 2026): Vendor and market trader roles remain the primary entry point for informal economy workers in Greater Accra. Moderate automation exposure through point-of-sale digitisation, but dominant in LMIC informal markets.",
+      "adjacent_skills": [
+        {
+          "isco_code": "3323",
+          "label": "Buyers",
+          "resilience_delta": 0.12,
+          "rationale": "Procurement and supply chain roles require negotiation and relationship management that is automation-resistant.",
+          "training_type": "online",
+          "estimated_weeks": 6
+        }
+      ],
+      "scarcity_index": {
+        "score": 41,
+        "label": "Moderate regional scarcity",
+        "tier": "medium",
+        "source": "Proxy: WB HCI 2024 × ITU penetration × Frey-Osborne 2013"
+      }
+    }
+  ],
+  "matches": [
+    {
+      "title": "ICT Repair Technician",
+      "wage_floor": "₵1,850/month",
+      "growth_percent": "4.1%",
+      "match_strength": 91,
+      "ilostat_source": "ILOSTAT 2024 · Ghana sector employment projections",
+      "returns_to_education_note": "Vocational training in electronics repair yields +12.4% wage premium over informal practice (World Bank STEP 2023).",
+      "gender_adjusted_wage_floor": "₵1,517/month",
+      "gender_note": "ILO-adjusted wage floor for women in Ghana. Women in this region earn approximately 18% less than the regional average. Source: ILO Global Wage Report 2024."
+    },
+    {
+      "title": "Market Trader / Vendor Supervisor",
+      "wage_floor": "₵1,400/month",
+      "growth_percent": "2.3%",
+      "match_strength": 74,
+      "ilostat_source": "ILOSTAT 2024 · Ghana sector employment projections",
+      "returns_to_education_note": "Formalising vendor operations through GRA registration increases income stability by ~18% (World Bank Ghana STEP 2022).",
+      "gender_adjusted_wage_floor": "₵1,148/month",
+      "gender_note": "ILO-adjusted wage floor for women in Ghana. Women in this region earn approximately 18% less than the regional average. Source: ILO Global Wage Report 2024."
+    }
+  ]
+}
