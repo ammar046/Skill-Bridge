@@ -16,12 +16,12 @@ const STEPS: Array<{
   {
     key: "extracting",
     label: "Extracting Hidden Skills",
-    detail: "Gemini 1.5 Pro is reading your work history…",
+    detail: "Gemini is parsing your narrative (agent may run a multi-step tool loop)…",
   },
   {
     key: "querying",
-    label: "Querying Live Labor Agent",
-    detail: "Tavily is searching real-time hiring, training & wage data…",
+    label: "Enriching With Live Data",
+    detail: "Tavily may search hiring and training evidence for your city…",
   },
   {
     key: "standardizing",

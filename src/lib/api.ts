@@ -20,6 +20,10 @@ export const API_BASE =
   (import.meta.env.VITE_API_BASE_URL as string | undefined)?.replace(/\/$/, "") ||
   "http://localhost:8000";
 
+/** When true, network/API failures load /api/demo-fallback instead of showing an error (judges/offline only). */
+const USE_SILENT_DEMO_FALLBACK =
+  import.meta.env.VITE_USE_SILENT_DEMO_FALLBACK === "true";
+
 // ─── Core fetch primitive ────────────────────────────────────────────────────
 
 export async function postWithTimeout<T>(
@@ -179,11 +183,19 @@ export async function buildProfile(
       }),
       signal: controller.signal,
     });
-    clearTimeout(timer);
   } catch (err) {
     clearTimeout(timer);
-    // Silent demo fallback on network/timeout error
+    if (!USE_SILENT_DEMO_FALLBACK) {
+      const timedOut = err instanceof DOMException && err.name === "AbortError";
+      throw new Error(
+        timedOut
+          ? `Request timed out after 90s. Check that the API is running and ${API_BASE} is reachable.`
+          : `Could not reach ${API_BASE}/api/extract — ${err instanceof Error ? err.message : String(err)}`,
+      );
+    }
+    rawRes = null;
   }
+  clearTimeout(timer);
 
   // Agent needs clarification — return question to UI
   if (rawRes?.status === 202) {
@@ -194,10 +206,30 @@ export async function buildProfile(
     };
   }
 
-  if (rawRes && rawRes.ok) {
+  if (rawRes?.ok) {
     apiData = await rawRes.json() as BackendProfileResponse;
+  } else if (rawRes && !rawRes.ok) {
+    if (!USE_SILENT_DEMO_FALLBACK) {
+      let detail = `HTTP ${rawRes.status}`;
+      try {
+        const j = (await rawRes.json()) as { detail?: string | unknown };
+        if (j?.detail != null)
+          detail = typeof j.detail === "string" ? j.detail : JSON.stringify(j.detail);
+      } catch {
+        /* ignore */
+      }
+      throw new Error(`Extraction failed — ${detail}`);
+    }
+    const fallbackRes = await fetch(`${API_BASE}/api/demo-fallback`);
+    if (!fallbackRes.ok)
+      throw new Error("Extraction unavailable. Please check your connection and try again.");
+    apiData = await fallbackRes.json() as BackendProfileResponse;
   } else {
-    // Silent demo fallback — transparent to user, no error shown
+    if (!USE_SILENT_DEMO_FALLBACK) {
+      throw new Error(
+        `No response from ${API_BASE}/api/extract. Set VITE_API_BASE_URL if the API is not on localhost:8000.`,
+      );
+    }
     const fallbackRes = await fetch(`${API_BASE}/api/demo-fallback`);
     if (!fallbackRes.ok)
       throw new Error("Extraction unavailable. Please check your connection and try again.");
