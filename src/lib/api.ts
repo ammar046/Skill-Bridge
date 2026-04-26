@@ -352,26 +352,34 @@ export async function getReadiness(
   };
 }
 
+function mapProfileMatchesToOpportunities(
+  profile: UserProfile,
+  locale: Locale,
+): OpportunityMatch[] {
+  const rows = profile.matches ?? [];
+  if (!Array.isArray(rows) || rows.length === 0) return [];
+  return rows.map((item, idx) => ({
+    id: `opp_${idx}_${profile.id}`,
+    title: item.title,
+    summary: `Match aligned to your profile for ${locale.country}.`,
+    matchScore: item.matchStrength,
+    iloWageFloor: item.wageFloorAmount,
+    sectorGrowthPct: parsePercent(item.growthPercent),
+    requiredSkills: profile.skills.slice(0, 3).map((s) => s.label),
+    ilostatSource: item.ilostatSource,
+    returnsToEducationNote: item.returnsToEducationNote,
+  }));
+}
+
+/**
+ * Uses cached `profile.matches` from onboarding — does NOT call `/api/extract`
+ * (that re-runs Gemini and burns quota on every page visit).
+ */
 export async function getOpportunities(
-  _profile: UserProfile,
+  profile: UserProfile,
   locale: Locale,
 ): Promise<OpportunityMatch[]> {
-  const apiData = await postWithTimeout<BackendProfileResponse>("/api/extract", {
-    narrative: _profile.rawNarrative,
-    locale: localeCode(locale),
-  }, 90000);
-  if (!Array.isArray(apiData.matches)) return [];
-  return apiData.matches.map((item, idx) => ({
-    id: `opp_${idx}_${Date.now().toString(36)}`,
-    title: item.title,
-    summary: `Match generated from your narrative for ${locale.country}.`,
-    matchScore: item.match_strength,
-    iloWageFloor: parseCurrencyAmount(item.wage_floor),
-    sectorGrowthPct: parsePercent(item.growth_percent),
-    requiredSkills: _profile.skills.slice(0, 3).map((s) => s.label),
-    ilostatSource: item.ilostat_source,
-    returnsToEducationNote: item.returns_to_education_note,
-  }));
+  return mapProfileMatchesToOpportunities(profile, locale);
 }
 
 export async function searchProviders(

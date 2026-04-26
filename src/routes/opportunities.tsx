@@ -66,7 +66,8 @@ function Opportunities() {
 
   if (!profile) return null;
 
-  const maxWage = Math.max(...matches.map((m) => m.iloWageFloor), 1);
+  const maxWage =
+    matches.length > 0 ? Math.max(...matches.map((m) => m.iloWageFloor), 1) : 1;
 
   return (
     <div className="space-y-10 py-2">
@@ -114,6 +115,11 @@ function Opportunities() {
         </div>
 
         <ul className="divide-y divide-hairline">
+          {matches.length === 0 && !matchError ? (
+            <li className="px-5 py-10 text-center text-sm leading-relaxed text-muted-foreground">
+              {t("opp.matches_empty", uiLocale)}
+            </li>
+          ) : null}
           {matches.map((m, i) => {
             const positive = m.sectorGrowthPct >= 0;
             const wagePct = (m.iloWageFloor / maxWage) * 100;

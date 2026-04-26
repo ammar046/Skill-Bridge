@@ -122,6 +122,7 @@ export type TranslationKey =
   | "opp.growing"
   | "opp.declining"
   | "opp.no_matches"
+  | "opp.matches_empty"
   | "opp.no_providers"
   // Skills card
   | "card.page_label"
@@ -272,6 +273,8 @@ const translations: Record<UILocale, Record<TranslationKey, string>> = {
     "opp.growing": "growing",
     "opp.declining": "declining",
     "opp.no_matches": "Loading opportunities…",
+    "opp.matches_empty":
+      "No role matches are saved on this device yet. Use Start from the home page to build your profile — matches appear here without calling the AI again.",
     "opp.no_providers": "No providers found for that skill.",
     // Skills card
     "card.page_label": "Exportable skills card",
@@ -422,6 +425,8 @@ const translations: Record<UILocale, Record<TranslationKey, string>> = {
     "opp.growing": "بڑھ رہا",
     "opp.declining": "کم ہو رہا",
     "opp.no_matches": "مواقع لوڈ ہو رہے ہیں…",
+    "opp.matches_empty":
+      "ابھی کوئی کردار کے میچز محفوظ نہیں۔ ہوم سے شروع کریں تاکہ پروفائل بنے — پھر یہاں میچز بغیر دوبارہ AI کے دکھائی دیں گے۔",
     "opp.no_providers": "اس مہارت کے لیے کوئی ادارہ نہیں ملا۔",
     // Skills card
     "card.page_label": "قابل برآمد مہارت کارڈ",
