@@ -91,12 +91,13 @@ def _compute_aggregate(locale_code: str) -> AggregateIntelligence | None:
             status=dominant_status,
         ))
 
+    # Take top-5 by highest/lowest score unconditionally — no threshold filter.
+    # Craft and trade skills common in LMICs have LMIC-adjusted scores of 0.25–0.45,
+    # which would be excluded by a hard 0.45 cutoff even though they ARE the at-risk group
+    # for this worker population.
     by_risk = sorted(aggregated, key=lambda x: x.avg_automation_score, reverse=True)
-    top_at_risk = [s for s in by_risk if s.avg_automation_score >= 0.45][:5]
-    top_durable = [
-        s for s in sorted(aggregated, key=lambda x: x.avg_automation_score)
-        if s.status in ("DURABLE", "durable") or s.avg_automation_score < 0.35
-    ][:5]
+    top_at_risk = by_risk[:5]
+    top_durable = sorted(aggregated, key=lambda x: x.avg_automation_score)[:5]
 
     # Gender breakdown
     gender_breakdown: dict[str, int] = defaultdict(int)

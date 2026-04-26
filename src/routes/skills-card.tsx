@@ -3,7 +3,6 @@ import { useEffect, useRef, useState } from "react";
 import { Download, QrCode, MessageSquare, Loader2, ShieldCheck } from "lucide-react";
 import QRCode from "qrcode";
 import jsPDF from "jspdf";
-import html2canvas from "html2canvas";
 import { useApp } from "@/context/AppContext";
 import { SignalPill } from "@/components/SignalPill";
 import { t } from "@/lib/i18n";
@@ -28,6 +27,8 @@ function SkillsCard() {
   const [qrUrl, setQrUrl] = useState("");
   const [phone, setPhone] = useState("");
   const [smsSent, setSmsSent] = useState(false);
+  const [pdfLoading, setPdfLoading] = useState(false);
+  const [pdfError, setPdfError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!profile) navigate({ to: "/onboarding" });
@@ -44,120 +45,162 @@ function SkillsCard() {
   }
 
   async function downloadPdf() {
-    if (!profile || !cardRef.current) return;
+    if (!profile) return;
+    setPdfLoading(true);
+    setPdfError(null);
+    try {
+      const A4_W = 595.28;
+      const A4_H = 841.89;
+      const M = 40;
+      const passId = profile.passId ?? null;
+      const verifyUrl = passId ? `https://unmapped.world/verify/${passId}` : null;
+      const doc = new jsPDF({ unit: "pt", format: "a4", compress: true });
+      let y = 0;
 
-    const A4_W = 595.28;
-    const A4_H = 841.89;
-    const M = 36;
-    const passId = profile.passId ?? null;
-    const verifyUrl = passId
-      ? `https://unmapped.world/verify/${passId}`
-      : null;
+      const txt = (
+        text: string,
+        x: number,
+        yPos: number,
+        size: number,
+        bold = false,
+        rgb: [number, number, number] = [20, 20, 20],
+        maxW?: number,
+      ) => {
+        doc.setFontSize(size);
+        doc.setFont("helvetica", bold ? "bold" : "normal");
+        doc.setTextColor(rgb[0], rgb[1], rgb[2]);
+        if (maxW) {
+          const lines = doc.splitTextToSize(text, maxW);
+          doc.text(lines, x, yPos);
+          return lines.length * size * 1.35;
+        }
+        doc.text(text, x, yPos);
+        return size * 1.35;
+      };
 
-    // 1 — Capture card DOM visually
-    const canvas = await html2canvas(cardRef.current, {
-      scale: 2,
-      useCORS: true,
-      backgroundColor: "#ffffff",
-      logging: false,
-    });
+      // ── 1. Header banner ──────────────────────────────────────────────────
+      doc.setFillColor(15, 15, 15);
+      doc.rect(0, 0, A4_W, 58, "F");
+      txt("UN·MAPPED — Bridge Pass", M, 20, 15, true, [255, 255, 255]);
+      txt("Open Infrastructure for the Informal Economy · UNMAPPED Protocol v2", M, 34, 8, false, [160, 160, 160]);
+      txt(`Issued: ${new Date().toLocaleDateString()}  ·  ${locale.country} (${locale.code.toUpperCase()})  ·  ISCO-08 Standardised`, M, 46, 8, false, [160, 160, 160]);
+      // Holographic accent bar
+      doc.setFillColor(16, 185, 129);
+      doc.rect(0, 56, A4_W, 3, "F");
+      y = 78;
 
-    const doc = new jsPDF({ unit: "pt", format: "a4", compress: true });
+      // ── 2. Worker identity block ──────────────────────────────────────────
+      txt("HOLDER", M, y, 7.5, false, [120, 120, 120]);
+      y += 14;
+      txt(profile.name, M, y, 24, true, [15, 15, 15]);
+      y += 30;
+      txt(
+        [profile.age ? `Age ${profile.age}` : "", profile.region, locale.country].filter(Boolean).join("  ·  "),
+        M, y, 9, false, [100, 100, 100],
+      );
+      y += 16;
 
-    // 2 — Header banner
-    doc.setFillColor(20, 20, 20);
-    doc.rect(0, 0, A4_W, 52, "F");
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(13);
-    doc.setTextColor(255, 255, 255);
-    doc.text("UNMAPPED — Bridge Pass", M, 22);
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(8);
-    doc.setTextColor(180, 180, 180);
-    doc.text(
-      `${profile.name}  ·  ${locale.country} (${locale.code})  ·  Issued ${new Date().toLocaleDateString()}`,
-      M,
-      37,
-    );
-    doc.text("ISCO-08 Standardised · Portable across borders · UNMAPPED Protocol v2", M, 47);
+      // Credential meta row
+      doc.setFillColor(248, 248, 248);
+      doc.roundedRect(M, y, A4_W - M * 2, 28, 4, 4, "F");
+      const credId = passId ? `UNMP-${passId}` : profile.id.slice(-8).toUpperCase();
+      txt("CREDENTIAL ID", M + 8, y + 10, 7, false, [120, 120, 120]);
+      txt(credId, M + 8, y + 21, 8, true, [20, 20, 20]);
+      txt("STANDARD", M + 180, y + 10, 7, false, [120, 120, 120]);
+      txt("ESCO / ILO ISCO-08", M + 180, y + 21, 8, true, [20, 20, 20]);
+      txt("ISSUED", M + 340, y + 10, 7, false, [120, 120, 120]);
+      txt(new Date(profile.createdAt).toLocaleDateString(), M + 340, y + 21, 8, true, [20, 20, 20]);
+      y += 42;
 
-    // 3 — Visual card image
-    const availW = A4_W - M * 2;
-    const imgRatio = canvas.height / canvas.width;
-    const imgH = Math.min(availW * imgRatio, A4_H - 52 - M - 130);
-    doc.addImage(canvas.toDataURL("image/png"), "PNG", M, 62, availW, imgH);
+      // ── 3. Validated Skills table ─────────────────────────────────────────
+      y += 8;
+      txt("VALIDATED SKILLS (ILO ISCO-08 × FREY-OSBORNE 2013)", M, y, 7.5, true, [80, 80, 80]);
+      y += 14;
 
-    // 4 — ISCO-08 credentials table (the portable, machine-readable section)
-    let y = 62 + imgH + 18;
-    doc.setFillColor(245, 245, 245);
-    doc.rect(M, y, A4_W - M * 2, 16, "F");
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(7.5);
-    doc.setTextColor(80, 80, 80);
-    doc.text("ISCO-08 CODE", M + 4, y + 10);
-    doc.text("SKILL LABEL", M + 70, y + 10);
-    doc.text("CLASSIFICATION", M + 280, y + 10);
-    doc.text("AUTOMATION RISK (F-O)", M + 390, y + 10);
-    y += 18;
+      // Table header
+      doc.setFillColor(30, 30, 30);
+      doc.rect(M, y, A4_W - M * 2, 14, "F");
+      txt("ISCO-08", M + 4, y + 10, 7, true, [200, 200, 200]);
+      txt("SKILL LABEL", M + 50, y + 10, 7, true, [200, 200, 200]);
+      txt("ILO TASK TYPE", M + 270, y + 10, 7, true, [200, 200, 200]);
+      txt("CLASS.", M + 380, y + 10, 7, true, [200, 200, 200]);
+      txt("F-O RISK", M + 430, y + 10, 7, true, [200, 200, 200]);
+      y += 18;
 
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(7.5);
-    profile.skills.forEach((s) => {
-      if (y > A4_H - 60) return;
-      doc.setTextColor(20, 20, 20);
-      doc.text(s.iscoCode, M + 4, y);
-      doc.text(s.label.slice(0, 38), M + 70, y);
-      const classColor = s.classification === "durable" ? [22, 163, 74] : [220, 38, 38];
-      doc.setTextColor(classColor[0], classColor[1], classColor[2]);
-      doc.text(s.classification.toUpperCase(), M + 280, y);
-      doc.setTextColor(80, 80, 80);
-      const fo = s.freyOsborneScore != null ? `${Math.round(s.freyOsborneScore * 100)}%` : "—";
-      doc.text(fo, M + 390, y);
+      profile.skills.forEach((s, i) => {
+        if (y > A4_H - 160) return;
+        const rowBg = i % 2 === 0 ? [252, 252, 252] : [244, 244, 244];
+        doc.setFillColor(rowBg[0], rowBg[1], rowBg[2]);
+        doc.rect(M, y - 10, A4_W - M * 2, 14, "F");
+
+        txt(s.iscoCode || "—", M + 4, y, 8, false, [60, 60, 60]);
+        txt(s.label.slice(0, 30), M + 50, y, 8, false, [20, 20, 20]);
+
+        const taskShort = (s.iloTaskType ?? "mixed").replace(/_/g, " ").slice(0, 22);
+        txt(taskShort, M + 270, y, 7, false, [80, 80, 80]);
+
+        const isDurable = s.classification === "durable";
+        const classRgb: [number, number, number] = isDurable ? [22, 163, 74] : [220, 38, 38];
+        txt(isDurable ? "DURABLE" : "AT RISK", M + 380, y, 7, true, classRgb);
+
+        const fo = s.freyOsborneScore != null ? `${Math.round(s.freyOsborneScore * 100)}%` : "—";
+        const foRgb: [number, number, number] = s.freyOsborneScore != null && s.freyOsborneScore > 0.55
+          ? [220, 38, 38]
+          : s.freyOsborneScore != null && s.freyOsborneScore < 0.35
+            ? [22, 163, 74]
+            : [180, 100, 0];
+        txt(fo, M + 435, y, 8, true, foRgb);
+        y += 14;
+      });
+
+      // ── 4. ILO wage floor block ───────────────────────────────────────────
       y += 12;
-    });
+      doc.setFillColor(235, 252, 243);
+      doc.roundedRect(M, y, A4_W - M * 2, 36, 4, 4, "F");
+      doc.setDrawColor(16, 185, 129);
+      doc.roundedRect(M, y, A4_W - M * 2, 36, 4, 4, "S");
+      txt("ILO WAGE FLOOR — ILOSTAT 2024", M + 8, y + 12, 7.5, true, [15, 115, 70]);
+      txt(
+        `${locale.currencySymbol} ${locale.sampleWageFloor.toLocaleString()} / month  ·  Source: ILO Global Wage Report 2024 · ILOSTAT published tables`,
+        M + 8, y + 26, 8, false, [20, 20, 20],
+      );
+      y += 50;
 
-    // 5 — ILO wage floor + econometric attribution
-    y += 10;
-    doc.setFillColor(235, 250, 240);
-    doc.rect(M, y, A4_W - M * 2, 28, "F");
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(7.5);
-    doc.setTextColor(22, 163, 74);
-    doc.text("ILO WAGE FLOOR (ILOSTAT 2024)", M + 4, y + 10);
-    doc.setFont("helvetica", "normal");
-    doc.setTextColor(20, 20, 20);
-    doc.text(
-      `${locale.currencySymbol}${locale.sampleWageFloor.toLocaleString()}/month  ·  Source: ILO Global Wage Report 2024 · ILOSTAT published tables`,
-      M + 4,
-      y + 21,
-    );
+      // ── 5. Source narrative quote ─────────────────────────────────────────
+      y += 4;
+      doc.setFillColor(250, 250, 250);
+      doc.roundedRect(M, y, A4_W - M * 2, 8, 2, 2, "F");
+      txt("SOURCE NARRATIVE", M, y + 7, 7, false, [120, 120, 120]);
+      y += 14;
+      const narrative = `"${profile.rawNarrative.slice(0, 300)}${profile.rawNarrative.length > 300 ? "..." : ""}"`;
+      const narH = txt(narrative, M, y, 8.5, false, [50, 50, 50], A4_W - M * 2);
+      y += narH + 14;
 
-    // 6 — Credential ID + QR code (bottom-right, ~2cm × 2cm ≈ 56pt)
-    if (passId && verifyUrl) {
-      const qrDataUrl = await QRCode.toDataURL(verifyUrl, { margin: 0, width: 160 });
-      const QR_SIZE = 56;
-      const qrX = A4_W - M - QR_SIZE;
-      const qrY = A4_H - M - QR_SIZE - 20;
-      doc.addImage(qrDataUrl, "PNG", qrX, qrY, QR_SIZE, QR_SIZE);
-      doc.setFontSize(6);
-      doc.setTextColor(100, 100, 100);
-      doc.text(`Credential ID: UNMP-${passId}`, M, qrY + QR_SIZE + 8);
+      // ── 6. QR code + credential ID ────────────────────────────────────────
+      if (passId && verifyUrl) {
+        const qrDataUrl = await QRCode.toDataURL(verifyUrl, { margin: 1, width: 160, errorCorrectionLevel: "M" });
+        const QR_SIZE = 64;
+        const qrX = A4_W - M - QR_SIZE;
+        const qrY = A4_H - M - QR_SIZE - 28;
+        doc.addImage(qrDataUrl, "PNG", qrX, qrY, QR_SIZE, QR_SIZE);
+        txt("Scan to verify", qrX - 2, qrY + QR_SIZE + 10, 7, false, [120, 120, 120]);
+        txt(`Credential ID: UNMP-${passId}`, M, qrY + QR_SIZE + 10, 7, false, [120, 120, 120]);
+      }
+
+      // ── 7. Footer ─────────────────────────────────────────────────────────
+      doc.setDrawColor(220, 220, 220);
+      doc.line(M, A4_H - 30, A4_W - M, A4_H - 30);
+      txt(
+        "Sources: ILO ISCO-08 taxonomy · Frey & Osborne (2013) automation scores, LMIC-adjusted per ILO (2019) · ILO Global Wage Report 2024 · ILOSTAT",
+        M, A4_H - 18, 7, false, [140, 140, 140], A4_W - M * 2,
+      );
+
+      doc.save(`unmapped-bridge-pass-${profile.name.toLowerCase().replace(/\s+/g, "-")}.pdf`);
+    } catch (err) {
+      setPdfError(err instanceof Error ? err.message : "PDF generation failed. Please try again.");
+    } finally {
+      setPdfLoading(false);
     }
-
-    // 7 — Footer
-    doc.setFontSize(7);
-    doc.setTextColor(140, 140, 140);
-    doc.text(
-      "Sources: ISCO-08 ILO taxonomy · Frey & Osborne (2013) LMIC-adjusted automation scores · World Bank WDI 2024 · ILO Global Wage Report 2024 · ILOSTAT",
-      M,
-      A4_H - 16,
-    );
-    const footerLine2 = passId
-      ? `Scan QR code to verify this credential. Powered by UNMAPPED Protocol — Open Infrastructure for the Informal Economy.`
-      : "This credential was generated by the UNMAPPED Protocol — open infrastructure for the informal economy.";
-    doc.text(footerLine2, M, A4_H - 7);
-
-    doc.save(`unmapped-bridge-pass-${profile.name.toLowerCase().replace(/\s+/g, "-")}.pdf`);
   }
 
   function sendSms(e: React.FormEvent) {
@@ -339,8 +382,8 @@ function SkillsCard() {
       </div>
 
       <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
-        <ActionBtn onClick={downloadPdf} icon={<Download className="h-4 w-4" />}>
-          {t("card.download_pdf", uiLocale)}
+        <ActionBtn onClick={downloadPdf} icon={pdfLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />} disabled={pdfLoading}>
+          {pdfLoading ? (uiLocale === "ur" ? "بن رہا ہے…" : "Generating…") : t("card.download_pdf", uiLocale)}
         </ActionBtn>
         <ActionBtn onClick={openQr} icon={<QrCode className="h-4 w-4" />}>
           {t("card.share_qr", uiLocale)}
@@ -352,6 +395,12 @@ function SkillsCard() {
           {t("card.send_sms", uiLocale)}
         </ActionBtn>
       </div>
+
+      {pdfError && (
+        <div className="rounded-lg border border-signal-risk/30 bg-signal-risk-soft px-4 py-3 text-sm text-signal-risk">
+          PDF error: {pdfError}
+        </div>
+      )}
 
       <Dialog open={qrOpen} onOpenChange={setQrOpen}>
         <DialogContent className="max-w-sm">
@@ -425,15 +474,18 @@ function ActionBtn({
   icon,
   children,
   onClick,
+  disabled,
 }: {
   icon: React.ReactNode;
   children: React.ReactNode;
   onClick: () => void;
+  disabled?: boolean;
 }) {
   return (
     <button
       onClick={onClick}
-      className="group inline-flex items-center justify-center gap-2 rounded-full border border-hairline bg-background px-4 py-3 text-sm font-semibold text-foreground transition-all hover:bg-foreground hover:text-background"
+      disabled={disabled}
+      className="group inline-flex items-center justify-center gap-2 rounded-full border border-hairline bg-background px-4 py-3 text-sm font-semibold text-foreground transition-all hover:bg-foreground hover:text-background disabled:opacity-50 disabled:cursor-not-allowed"
     >
       <span className="transition-transform group-hover:scale-110">{icon}</span>
       {children}
