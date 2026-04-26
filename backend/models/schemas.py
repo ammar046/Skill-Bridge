@@ -91,6 +91,25 @@ class IndicatorValue(BaseModel):
     available: bool = True
 
 
+class SkillAggregate(BaseModel):
+    isco_code: str = ""
+    label: str = ""
+    count: int = 0
+    avg_automation_score: float = 0.0
+    status: str = ""
+
+
+class AggregateIntelligence(BaseModel):
+    total_workers_assessed: int = 0
+    top_skills_at_risk: list[SkillAggregate] = []
+    top_durable_skills: list[SkillAggregate] = []
+    skill_distribution: list[SkillAggregate] = []
+    gender_breakdown: dict[str, int] = {}
+    cities_represented: list[str] = []
+    avg_automation_score: float = 0.0
+    assessment_trend: list[dict[str, Any]] = []
+
+
 class PolicymakerLiveStats(BaseModel):
     """
     Full policymaker dashboard payload.
@@ -129,6 +148,10 @@ class PolicymakerLiveStats(BaseModel):
     districts: list[dict[str, Any]]
     policy_insights: list[str]
     top_growth_sectors: list[dict[str, Any]]
+
+    # UNMAPPED-exclusive: assessed worker intelligence
+    aggregate_intelligence: AggregateIntelligence | None = None
+    task_bucket_averages: dict[str, float] = {}
 
 
 # Keep legacy alias for backward compat

@@ -83,6 +83,25 @@ export interface IndicatorValue {
   available: boolean;
 }
 
+export interface SkillAggregate {
+  isco_code: string;
+  label: string;
+  count: number;
+  avg_automation_score: number;
+  status: string;
+}
+
+export interface AggregateIntelligence {
+  total_workers_assessed: number;
+  top_skills_at_risk: SkillAggregate[];
+  top_durable_skills: SkillAggregate[];
+  skill_distribution: SkillAggregate[];
+  gender_breakdown: Record<string, number>;
+  cities_represented: string[];
+  avg_automation_score: number;
+  assessment_trend: Array<{ date: string; count: number }>;
+}
+
 export interface PolicymakerLiveStats {
   locale_code: string;
   country: string;
@@ -108,6 +127,8 @@ export interface PolicymakerLiveStats {
   districts: Array<{ name: string; skill_gap: number; hci_local: number; neet_pct: number }>;
   policy_insights: string[];
   top_growth_sectors: Array<{ sector: string; growth_pct: number; demand_gap_pct: number; source: string }>;
+  aggregate_intelligence: AggregateIntelligence | null;
+  task_bucket_averages: Record<string, number>;
 }
 
 // Keep for backward compat

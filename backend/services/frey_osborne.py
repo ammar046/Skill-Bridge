@@ -401,6 +401,48 @@ def get_ilo_task_label(task_type: str) -> str:
     return ILO_TASK_LABELS.get(task_type, task_type.replace("_", " "))
 
 
+def get_task_bucket_averages() -> dict[str, float]:
+    """
+    Groups all ISCO-08 codes in _ISCO4_SCORES by ILO task-content classification
+    (ISCO major group, first digit) and returns average LMIC-adjusted automation
+    score per four high-level task buckets.
+
+    Returns
+    -------
+    dict with keys:
+        "routine_cognitive"      — ISCO majors 4 (clerks)
+        "routine_manual"         — ISCO majors 8, 9 (operators, elementary)
+        "nonroutine_cognitive"   — ISCO majors 1, 2, 3 (managers, professionals, technicians)
+        "nonroutine_manual"      — ISCO majors 5, 6, 7 (services, agri, craft/trades)
+
+    Sources
+    -------
+    Frey & Osborne (2013) × ILO Future of Work (2020) task-content classifications.
+    """
+    buckets: dict[str, list[float]] = {
+        "routine_cognitive": [],
+        "routine_manual": [],
+        "nonroutine_cognitive": [],
+        "nonroutine_manual": [],
+    }
+    for code, raw_score in _ISCO4_SCORES.items():
+        major = code[:1]
+        lmic_score = round(raw_score * 0.80, 3)  # 20% LMIC discount
+        if major == "4":
+            buckets["routine_cognitive"].append(lmic_score)
+        elif major in {"8", "9"}:
+            buckets["routine_manual"].append(lmic_score)
+        elif major in {"1", "2", "3"}:
+            buckets["nonroutine_cognitive"].append(lmic_score)
+        elif major in {"5", "6", "7"}:
+            buckets["nonroutine_manual"].append(lmic_score)
+
+    return {
+        k: round(sum(v) / len(v), 3) if v else 0.0
+        for k, v in buckets.items()
+    }
+
+
 def classify(lmic_score: float, medium_threshold: float = 0.40, high_threshold: float = 0.65) -> str:
     """Return 'durable', 'transitioning', or 'at_risk'."""
     if lmic_score >= high_threshold:

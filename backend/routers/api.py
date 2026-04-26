@@ -1,10 +1,12 @@
 import hashlib
-from datetime import date as _date
+from collections import defaultdict
+from datetime import date as _date, datetime as _datetime
 from fastapi import APIRouter, HTTPException
 
 try:
     from ..config.loader import get_econometric_signal, get_locale
     from ..models.schemas import (
+        AggregateIntelligence,
         IndicatorValue,
         MarketSignalsRequest,
         MarketSignalsResponse,
@@ -12,16 +14,19 @@ try:
         PolicymakerLiveStats,
         PolicymakerLocaleStats,
         ProfileResponse,
+        SkillAggregate,
         TrainingProvider,
         UserNarrativeRequest,
     )
     from ..services.ai_engine import extract_skills
+    from ..services.frey_osborne import get_task_bucket_averages
     from ..services.institutional_data import get_live_indicators
     from ..services.search_engine import find_market_signals, find_training
     from ..services.skill_enricher import enrich_profile
 except (ImportError, ModuleNotFoundError):
     from config.loader import get_econometric_signal, get_locale
     from models.schemas import (
+        AggregateIntelligence,
         IndicatorValue,
         MarketSignalsRequest,
         MarketSignalsResponse,
@@ -29,10 +34,12 @@ except (ImportError, ModuleNotFoundError):
         PolicymakerLiveStats,
         PolicymakerLocaleStats,
         ProfileResponse,
+        SkillAggregate,
         TrainingProvider,
         UserNarrativeRequest,
     )
     from services.ai_engine import extract_skills
+    from services.frey_osborne import get_task_bucket_averages
     from services.institutional_data import get_live_indicators
     from services.search_engine import find_market_signals, find_training
     from services.skill_enricher import enrich_profile
@@ -41,6 +48,87 @@ router = APIRouter(prefix="/api", tags=["api"])
 
 # In-memory credential store — session-scoped, no database required for hackathon
 _verification_store: dict[str, dict] = {}
+
+# Assessment intelligence store — populated on every successful /api/extract
+# Session-scoped: resets on server restart. Capped at 1000 records.
+assessment_store: list[dict] = []
+
+
+def _compute_aggregate(locale_code: str) -> AggregateIntelligence | None:
+    """
+    Compute aggregate skills intelligence from assessment_store for a given locale.
+    Returns None if no records exist for the locale. Fast O(n) computation.
+    """
+    records = [r for r in assessment_store if r.get("locale") == locale_code]
+    if not records:
+        return None
+
+    # Flatten all skills across records
+    all_skills: list[dict] = []
+    for rec in records:
+        all_skills.extend(rec.get("skills", []))
+
+    # Aggregate by ISCO code
+    code_stats: dict[str, dict] = defaultdict(lambda: {
+        "label": "", "scores": [], "statuses": []
+    })
+    for sk in all_skills:
+        code = sk.get("isco_code", "????")
+        code_stats[code]["label"] = sk.get("label", code)
+        code_stats[code]["scores"].append(sk.get("automation_score", 0.5))
+        code_stats[code]["statuses"].append(sk.get("status", ""))
+
+    aggregated: list[SkillAggregate] = []
+    for code, data in code_stats.items():
+        scores = data["scores"]
+        statuses = data["statuses"]
+        dominant_status = max(set(statuses), key=statuses.count) if statuses else ""
+        aggregated.append(SkillAggregate(
+            isco_code=code,
+            label=data["label"],
+            count=len(scores),
+            avg_automation_score=round(sum(scores) / len(scores), 3),
+            status=dominant_status,
+        ))
+
+    by_risk = sorted(aggregated, key=lambda x: x.avg_automation_score, reverse=True)
+    top_at_risk = [s for s in by_risk if s.avg_automation_score >= 0.45][:5]
+    top_durable = [
+        s for s in sorted(aggregated, key=lambda x: x.avg_automation_score)
+        if s.status in ("DURABLE", "durable") or s.avg_automation_score < 0.35
+    ][:5]
+
+    # Gender breakdown
+    gender_breakdown: dict[str, int] = defaultdict(int)
+    for rec in records:
+        g = rec.get("gender") or "not_provided"
+        gender_breakdown[g] += 1
+
+    # Cities
+    cities = sorted({rec.get("city", "") for rec in records if rec.get("city")})
+
+    # Average automation score
+    all_scores = [sk.get("automation_score", 0.5) for sk in all_skills]
+    avg_score = round(sum(all_scores) / len(all_scores), 3) if all_scores else 0.0
+
+    # Assessment trend — group by date
+    date_counts: dict[str, int] = defaultdict(int)
+    for rec in records:
+        ts = rec.get("timestamp", "")[:10]  # YYYY-MM-DD
+        if ts:
+            date_counts[ts] += 1
+    trend = [{"date": d, "count": c} for d, c in sorted(date_counts.items())]
+
+    return AggregateIntelligence(
+        total_workers_assessed=len(records),
+        top_skills_at_risk=top_at_risk,
+        top_durable_skills=top_durable,
+        skill_distribution=sorted(aggregated, key=lambda x: x.count, reverse=True),
+        gender_breakdown=dict(gender_breakdown),
+        cities_represented=cities,
+        avg_automation_score=avg_score,
+        assessment_trend=trend,
+    )
 
 
 def _make_pass_id(worker_name: str, locale_code: str, issue_date: str, isco_codes: list[str]) -> str:
@@ -83,6 +171,29 @@ def extract_profile(payload: UserNarrativeRequest) -> ProfileResponse:
                         )
             except Exception:
                 pass  # wage adjustment is additive — never block the main flow
+
+        # --- Assessment intelligence store ---
+        # Append a summary record so the policymaker dashboard can show real aggregate data.
+        # Cap at 1000 records to keep memory bounded.
+        assessment_record = {
+            "locale": payload.locale,
+            "timestamp": _datetime.utcnow().isoformat(),
+            "city": user_city,
+            "gender": payload.gender or None,
+            "skills": [
+                {
+                    "isco_code": s.isco_code,
+                    "label": s.label,
+                    "automation_score": s.frey_osborne_score,
+                    "status": s.status,
+                    "ilo_task_type": s.ilo_task_type,
+                }
+                for s in enriched.user_skills
+            ],
+        }
+        if len(assessment_store) >= 1000:
+            assessment_store.pop(0)
+        assessment_store.append(assessment_record)
 
         # Generate verifiable pass_id
         issue_date = _date.today().isoformat()
@@ -195,6 +306,9 @@ def policymaker_stats(locale_code: str) -> PolicymakerLiveStats:
             available=bool(gwg),
         )
 
+        aggregate_intel = _compute_aggregate(locale_code)
+        task_buckets = get_task_bucket_averages()
+
         return PolicymakerLiveStats(
             locale_code=locale["code"],
             country=locale["country"],
@@ -220,6 +334,8 @@ def policymaker_stats(locale_code: str) -> PolicymakerLiveStats:
             districts=locale["districts"],
             policy_insights=locale["policy_insights"],
             top_growth_sectors=top_sectors_with_source,
+            aggregate_intelligence=aggregate_intel,
+            task_bucket_averages=task_buckets,
         )
     except HTTPException:
         raise
