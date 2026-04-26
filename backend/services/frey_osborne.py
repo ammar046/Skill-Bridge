@@ -450,3 +450,48 @@ def classify(lmic_score: float, medium_threshold: float = 0.40, high_threshold: 
     if lmic_score >= medium_threshold:
         return "transitioning"
     return "durable"
+
+
+ISCO_SECTOR_MAP: dict[str, str] = {
+    "1": "Management & Leadership",
+    "2": "Professional & Technical",
+    "3": "Technicians & Associate Professionals",
+    "4": "Clerical & Administrative",
+    "5": "Service & Sales",
+    "6": "Agriculture & Fisheries",
+    "7": "Craft & Trades",
+    "8": "Plant & Machine Operation",
+    "9": "Elementary Occupations",
+}
+
+
+def get_sector_risk_profile() -> list[dict]:
+    """
+    For each ISCO major group present in _ISCO4_SCORES,
+    compute average LMIC-adjusted automation score, count of codes,
+    min score, and max score. Returns sorted by avg_score descending.
+
+    Data: Frey & Osborne (2013) × ILO ISCO-08 major group mapping.
+    Covers all occupations in the Oxford table — not city-level data.
+    """
+    from collections import defaultdict
+    groups: dict[str, list[float]] = defaultdict(list)
+    for code, raw_score in _ISCO4_SCORES.items():
+        major = code[:1]
+        if major in ISCO_SECTOR_MAP:
+            lmic_score = round(raw_score * 0.80, 3)
+            groups[major].append(lmic_score)
+
+    result = []
+    for major, scores in groups.items():
+        if not scores:
+            continue
+        result.append({
+            "sector": ISCO_SECTOR_MAP[major],
+            "avg_automation_score": round(sum(scores) / len(scores), 3),
+            "isco_code_count": len(scores),
+            "min_score": round(min(scores), 3),
+            "max_score": round(max(scores), 3),
+        })
+
+    return sorted(result, key=lambda x: x["avg_automation_score"], reverse=True)

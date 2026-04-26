@@ -13,14 +13,16 @@ try:
         OpportunitySearchRequest,
         PolicymakerLiveStats,
         PolicymakerLocaleStats,
+        PolicySignal,
         ProfileResponse,
+        SectorRisk,
         SkillAggregate,
         TrainingProvider,
         UserNarrativeRequest,
     )
     from ..services.ai_engine import extract_skills
-    from ..services.frey_osborne import get_task_bucket_averages
-    from ..services.institutional_data import get_live_indicators
+    from ..services.frey_osborne import get_sector_risk_profile, get_task_bucket_averages
+    from ..services.institutional_data import generate_policy_signals, get_live_indicators
     from ..services.search_engine import find_market_signals, find_training
     from ..services.skill_enricher import enrich_profile
 except (ImportError, ModuleNotFoundError):
@@ -33,14 +35,16 @@ except (ImportError, ModuleNotFoundError):
         OpportunitySearchRequest,
         PolicymakerLiveStats,
         PolicymakerLocaleStats,
+        PolicySignal,
         ProfileResponse,
+        SectorRisk,
         SkillAggregate,
         TrainingProvider,
         UserNarrativeRequest,
     )
     from services.ai_engine import extract_skills
-    from services.frey_osborne import get_task_bucket_averages
-    from services.institutional_data import get_live_indicators
+    from services.frey_osborne import get_sector_risk_profile, get_task_bucket_averages
+    from services.institutional_data import generate_policy_signals, get_live_indicators
     from services.search_engine import find_market_signals, find_training
     from services.skill_enricher import enrich_profile
 
@@ -309,6 +313,22 @@ def policymaker_stats(locale_code: str) -> PolicymakerLiveStats:
 
         aggregate_intel = _compute_aggregate(locale_code)
         task_buckets = get_task_bucket_averages()
+        sector_profile_raw = get_sector_risk_profile()
+        sector_profile = [SectorRisk(**s) for s in sector_profile_raw]
+
+        # Rule-based policy signals — no Gemini, deterministic, citable
+        hci_val: float = live["hci_score"].get("value") or 0.45
+        neet_val: float = live["neet_rate_pct"].get("value") or ilo.get("youth_neet_rate_pct", 25.0)
+        internet_val: float = live["internet_penetration_pct"].get("value") or 35.0
+        agg_skills = aggregate_intel.top_skills_at_risk if aggregate_intel else []
+        policy_sigs = generate_policy_signals(
+            aggregate_skills=agg_skills,
+            task_bucket_averages=task_buckets,
+            hci=hci_val,
+            neet_rate=neet_val,
+            internet_pct=internet_val,
+            locale_name=locale["country"],
+        )
 
         return PolicymakerLiveStats(
             locale_code=locale["code"],
@@ -337,6 +357,8 @@ def policymaker_stats(locale_code: str) -> PolicymakerLiveStats:
             top_growth_sectors=top_sectors_with_source,
             aggregate_intelligence=aggregate_intel,
             task_bucket_averages=task_buckets,
+            policy_signals=policy_sigs,
+            sector_risk_profile=sector_profile,
         )
     except HTTPException:
         raise

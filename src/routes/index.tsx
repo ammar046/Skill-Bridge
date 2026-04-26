@@ -73,7 +73,11 @@ function Index() {
 
           <div className="mt-10 grid grid-cols-3 gap-px overflow-hidden rounded-xl border border-hairline bg-hairline">
             <Metric n="1.6B" label={t("home.metric_workers", uiLocale)} />
-            <Metric n="71%" label={t("home.metric_africa", uiLocale)} />
+            <Metric
+              n={locale.landingStat?.figure ?? "71%"}
+              label={locale.landingStat?.label ?? "of workers are in the informal economy"}
+              sourceShort={locale.landingStat?.source_short}
+            />
             <Metric n="0" label={t("home.metric_ids", uiLocale)} tone="risk" />
           </div>
         </div>
@@ -183,7 +187,17 @@ function Index() {
   );
 }
 
-function Metric({ n, label, tone }: { n: string; label: string; tone?: "risk" }) {
+function Metric({
+  n,
+  label,
+  tone,
+  sourceShort,
+}: {
+  n: string;
+  label: string;
+  tone?: "risk";
+  sourceShort?: string;
+}) {
   return (
     <div className="bg-background px-4 py-4">
       <div
@@ -195,6 +209,11 @@ function Metric({ n, label, tone }: { n: string; label: string; tone?: "risk" })
         {n}
       </div>
       <div className="mt-1 text-[11px] leading-tight text-muted-foreground">{label}</div>
+      {sourceShort && (
+        <div className="mt-1 text-[9px] text-muted-foreground/60">
+          Source: {sourceShort}
+        </div>
+      )}
     </div>
   );
 }

@@ -153,17 +153,20 @@ function SkillsCard() {
         y += 14;
       });
 
-      // ── 4. ILO wage floor block ───────────────────────────────────────────
+      // ── 4. ILO wage floor block (dynamic from locale, no hardcoded strings) ─
       y += 12;
       doc.setFillColor(235, 252, 243);
       doc.roundedRect(M, y, A4_W - M * 2, 36, 4, 4, "F");
       doc.setDrawColor(16, 185, 129);
       doc.roundedRect(M, y, A4_W - M * 2, 36, 4, 4, "S");
-      txt("ILO WAGE FLOOR — ILOSTAT 2024", M + 8, y + 12, 7.5, true, [15, 115, 70]);
-      txt(
-        `${locale.currencySymbol} ${locale.sampleWageFloor.toLocaleString()} / month  ·  Source: ILO Global Wage Report 2024 · ILOSTAT published tables`,
-        M + 8, y + 26, 8, false, [20, 20, 20],
-      );
+      const wageLabel = locale.sampleWageFloor
+        ? `ILO WAGE FLOOR — ${locale.currency}`
+        : "ILO WAGE FLOOR — DATA UNAVAILABLE";
+      txt(wageLabel, M + 8, y + 12, 7.5, true, [15, 115, 70]);
+      const wageValue = locale.sampleWageFloor
+        ? `${locale.currencySymbol} ${locale.sampleWageFloor.toLocaleString()} / month  ·  Source: ${locale.wageFloorSource}`
+        : "Wage data unavailable for this region — contact ILO ILOSTAT for current figures";
+      txt(wageValue, M + 8, y + 26, 8, false, [20, 20, 20]);
       y += 50;
 
       // ── 5. Source narrative quote ─────────────────────────────────────────

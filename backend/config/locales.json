@@ -22,7 +22,14 @@
     "currency": "GHS",
     "currency_symbol": "₵",
     "region_default": "Greater Accra",
+    "default_city": "Accra",
     "language_tag": "en-GH",
+    "landing_stat": {
+      "figure": "71%",
+      "label": "of employment in Sub-Saharan Africa is informal",
+      "source": "ILO World Employment and Social Outlook 2023",
+      "source_short": "ILO WESO 2023"
+    },
     "education_taxonomy": {
       "name": "NVTI / CTVET",
       "full_name": "National Vocational Training Institute / Council for Technical and Vocational Education and Training",
@@ -122,7 +129,14 @@
     "currency": "PKR",
     "currency_symbol": "₨",
     "region_default": "Punjab",
+    "default_city": "Karachi",
     "language_tag": "en-PK",
+    "landing_stat": {
+      "figure": "72%",
+      "label": "of non-agricultural employment in South Asia is informal",
+      "source": "ILO World Employment and Social Outlook 2023",
+      "source_short": "ILO WESO 2023"
+    },
     "education_taxonomy": {
       "name": "NAVTTC / TEVTA",
       "full_name": "National Vocational and Technical Training Commission / Technical Education and Vocational Training Authority",

@@ -1,5 +1,6 @@
 import os
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from datetime import datetime
 from urllib.parse import urlparse
 
 from dotenv import load_dotenv
@@ -12,6 +13,37 @@ except (ImportError, ModuleNotFoundError):
     from models.schemas import MarketSignal, MarketSignalsResponse, TrainingProvider
 
 load_dotenv()
+
+
+# ─── Pure query-builder functions (no Tavily import, no side effects) ─────────
+
+def build_hiring_query(isco_label: str, city: str, locale_code: str) -> str:
+    """Build a city- and role-specific hiring demand query."""
+    year = datetime.utcnow().year
+    first_word = isco_label.split()[0] if isco_label else ""
+    return (
+        f'"{isco_label}" OR "{first_word}" jobs hiring demand '
+        f'"{city}" {locale_code.upper()} {year} employment'
+    )
+
+
+def build_training_query(isco_label: str, city: str) -> str:
+    """Build a city-specific training provider query."""
+    first_word = isco_label.split()[0] if isco_label else ""
+    return (
+        f'vocational training "{isco_label}" OR "{first_word}" '
+        f'course certificate "{city}" TVET NGO skills program'
+    )
+
+
+def build_wage_query(isco_label: str, city: str) -> str:
+    """Build a city-specific wage/day-rate query."""
+    year = datetime.utcnow().year
+    first_word = isco_label.split()[0] if isco_label else ""
+    return (
+        f'"{isco_label}" OR "{first_word}" salary "per month" OR "per day" informal '
+        f'"{city}" {year} wage earnings'
+    )
 
 
 def _client() -> TavilyClient:
@@ -49,7 +81,7 @@ def _site_name_from_url(url: str) -> str:
 
 def find_training(skill: str, location: str) -> list[TrainingProvider]:
     client = _client()
-    query = f"local training providers for {skill} in {location}".strip()
+    query = build_training_query(isco_label=skill, city=location)
 
     try:
         response = client.search(
@@ -116,22 +148,13 @@ def _run_tavily_query(
     return signals
 
 
-def find_market_signals(skill: str, location: str) -> MarketSignalsResponse:
+def find_market_signals(skill: str, location: str, locale_code: str = "") -> MarketSignalsResponse:
     client = _client()
 
     queries = {
-        "hiring": (
-            f"Current job openings and high-growth companies in {location} "
-            f"for {skill} 2026"
-        ),
-        "training": (
-            f"Physical vocational centers and NGO-led training for {skill} "
-            f"in {location}"
-        ),
-        "wages": (
-            f"Average day-rate or monthly wage for informal {skill} work "
-            f"in {location} 2026"
-        ),
+        "hiring": build_hiring_query(isco_label=skill, city=location, locale_code=locale_code),
+        "training": build_training_query(isco_label=skill, city=location),
+        "wages": build_wage_query(isco_label=skill, city=location),
     }
 
     results: dict[str, list[MarketSignal]] = {"hiring": [], "training": [], "wages": []}

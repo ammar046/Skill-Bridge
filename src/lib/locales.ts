@@ -24,6 +24,13 @@ export interface WittgensteinProjections {
   source: string;
 }
 
+export interface LandingStat {
+  figure: string;
+  label: string;
+  source: string;
+  source_short: string;
+}
+
 export interface Locale {
   code: CountryCode;
   flag: string;
@@ -31,6 +38,7 @@ export interface Locale {
   language: string;
   currency: string;
   currencySymbol: string;
+  landingStat: LandingStat;
   /** ILO Global Wage Report 2024 minimum wage floor (local currency, display only). */
   sampleWageFloor: number;
   /** Source string for the wage floor value. */
@@ -61,6 +69,12 @@ export const LOCALES: Record<CountryCode, Locale> = {
     language: "English (Ghana)",
     currency: "GHS",
     currencySymbol: "₵",
+    landingStat: {
+      figure: "71%",
+      label: "of employment in Sub-Saharan Africa is informal",
+      source: "ILO World Employment and Social Outlook 2023",
+      source_short: "ILO WESO 2023",
+    },
     sampleWageFloor: 1850,
     wageFloorSource: "ILO Global Wage Report 2024 · ILOSTAT minimum wage tables (Ghana)",
     genderWageGap: 0.18,
@@ -105,6 +119,12 @@ export const LOCALES: Record<CountryCode, Locale> = {
     language: "English (Pakistan)",
     currency: "PKR",
     currencySymbol: "₨",
+    landingStat: {
+      figure: "72%",
+      label: "of non-agricultural employment in South Asia is informal",
+      source: "ILO World Employment and Social Outlook 2023",
+      source_short: "ILO WESO 2023",
+    },
     sampleWageFloor: 37000,
     wageFloorSource: "ILO Global Wage Report 2024 · ILOSTAT minimum wage tables (Pakistan)",
     genderWageGap: 0.34,

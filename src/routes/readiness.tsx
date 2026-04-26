@@ -112,7 +112,7 @@ function Readiness() {
               {t("readiness.demand_trend_label", uiLocale)}
             </h2>
             <span className="num text-[10px] uppercase tracking-wider text-muted-foreground">
-              {locale.region} · index 100 = today
+              {locale.region} · {t("readiness.index_today", uiLocale)}
             </span>
           </div>
 
@@ -145,7 +145,7 @@ function Readiness() {
                   stroke="var(--ink-muted)"
                   strokeDasharray="3 3"
                   label={{
-                    value: "today",
+                    value: uiLocale === "ur" ? "آج" : "today",
                     position: "right",
                     fontSize: 10,
                     fill: "var(--ink-muted)",
@@ -171,7 +171,7 @@ function Readiness() {
             </ResponsiveContainer>
           </div>
           <p className="mt-2 text-xs text-muted-foreground">
-            Region-specific projection of demand for your skill mix.
+            {t("readiness.demand_note", uiLocale)}
           </p>
         </div>
       </div>
@@ -188,11 +188,11 @@ function Readiness() {
               {t("readiness.resilience_label", uiLocale)} · UNMAPPED
             </p>
             <h3 className="display mt-2 text-2xl font-semibold leading-tight tracking-tight text-foreground md:text-3xl">
-              Learn{" "}
+              {t("readiness.learn_prefix", uiLocale)}{" "}
               <span className="underline decoration-signal-durable decoration-[3px] underline-offset-4">
                 {report.resilienceSuggestion.skill}
               </span>{" "}
-              to lift resilience by{" "}
+              {t("readiness.lift_resilience", uiLocale)}{" "}
               <span className="num text-signal-durable">
                 +{report.resilienceSuggestion.deltaPercent}%
               </span>

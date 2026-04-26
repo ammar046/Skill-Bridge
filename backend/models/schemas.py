@@ -1,5 +1,6 @@
+from typing import Any, Literal
+
 from pydantic import BaseModel, Field
-from typing import Any
 
 
 class UserNarrativeRequest(BaseModel):
@@ -19,6 +20,28 @@ class AdjacentSkill(BaseModel):
     estimated_weeks: int = 0
 
 
+class ScarcityIndex(BaseModel):
+    """Deterministic proxy for skill scarcity in a given LMIC locale."""
+    score: int = 0          # 0-95 normalised scale
+    label: str = ""
+    tier: str = "low"       # "high" | "medium" | "low"
+    source: str = "Proxy: WB HCI 2024 × ITU penetration × Frey-Osborne 2013"
+
+
+class PolicySignal(BaseModel):
+    severity: Literal["high", "medium", "low"] = "low"
+    text: str = ""
+    source: str = ""
+
+
+class SectorRisk(BaseModel):
+    sector: str = ""
+    avg_automation_score: float = 0.0
+    isco_code_count: int = 0
+    min_score: float = 0.0
+    max_score: float = 0.0
+
+
 class ExtractedSkill(BaseModel):
     label: str
     isco_code: str
@@ -28,6 +51,7 @@ class ExtractedSkill(BaseModel):
     ilo_task_type: str = "mixed"
     resilience_note: str = ""
     adjacent_skills: list[AdjacentSkill] = []
+    scarcity_index: ScarcityIndex | None = None
 
 
 class OpportunityMatch(BaseModel):
@@ -152,6 +176,8 @@ class PolicymakerLiveStats(BaseModel):
     # UNMAPPED-exclusive: assessed worker intelligence
     aggregate_intelligence: AggregateIntelligence | None = None
     task_bucket_averages: dict[str, float] = {}
+    policy_signals: list[PolicySignal] = []
+    sector_risk_profile: list[SectorRisk] = []
 
 
 # Keep legacy alias for backward compat

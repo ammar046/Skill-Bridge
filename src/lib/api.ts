@@ -65,6 +65,13 @@ type BackendAdjacentSkill = {
   estimated_weeks: number;
 };
 
+type BackendScarcityIndex = {
+  score: number;
+  label: string;
+  tier: string;
+  source: string;
+};
+
 type BackendExtractedSkill = {
   label: string;
   isco_code: string;
@@ -74,6 +81,7 @@ type BackendExtractedSkill = {
   ilo_task_type?: string;
   resilience_note?: string;
   adjacent_skills?: BackendAdjacentSkill[];
+  scarcity_index?: BackendScarcityIndex;
 };
 
 type BackendOpportunityMatch = {
@@ -153,6 +161,14 @@ export async function buildProfile(
     iloTaskType: skill.ilo_task_type,
     resilienceNote: skill.resilience_note,
     adjacentSkills: skill.adjacent_skills ?? [],
+    scarcityIndex: skill.scarcity_index
+      ? {
+          score: skill.scarcity_index.score,
+          label: skill.scarcity_index.label,
+          tier: skill.scarcity_index.tier as "high" | "medium" | "low",
+          source: skill.scarcity_index.source,
+        }
+      : undefined,
   }));
 
   return {

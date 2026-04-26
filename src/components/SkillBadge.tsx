@@ -216,6 +216,47 @@ export function SkillBadge({ skill }: { skill: Skill }) {
                 </div>
               )}
 
+              {/* Regional Scarcity bar */}
+              {skill.scarcityIndex != null && (
+                <div>
+                  <div className="flex items-center justify-between text-muted-foreground">
+                    <span>Regional Scarcity</span>
+                    <span
+                      className={`num font-semibold ${
+                        skill.scarcityIndex.tier === "high"
+                          ? "text-teal-600"
+                          : skill.scarcityIndex.tier === "medium"
+                            ? "text-amber-600"
+                            : "text-muted-foreground"
+                      }`}
+                    >
+                      {skill.scarcityIndex.score}/100
+                    </span>
+                  </div>
+                  <div className="mt-1 h-2 overflow-hidden rounded-full bg-muted">
+                    <div
+                      className={`h-full rounded-full transition-all duration-700 ${
+                        skill.scarcityIndex.tier === "high"
+                          ? "bg-teal-500"
+                          : skill.scarcityIndex.tier === "medium"
+                            ? "bg-amber-400"
+                            : "bg-muted-foreground/40"
+                      }`}
+                      style={{ width: `${skill.scarcityIndex.score}%` }}
+                    />
+                  </div>
+                  <p className="mt-0.5 text-[9px] text-muted-foreground">
+                    {skill.scarcityIndex.label}
+                  </p>
+                  <p className="mt-0.5 text-[9px] text-muted-foreground/60">
+                    Source: {skill.scarcityIndex.source}
+                  </p>
+                  <p className="mt-1 text-[9px] italic text-muted-foreground/70">
+                    This is a computed proxy based on automation risk, Human Capital Index, and internet penetration. It is not a survey.
+                  </p>
+                </div>
+              )}
+
               {/* Epistemic honesty — limitations */}
               <div className="rounded-lg border border-amber-200 bg-amber-50 p-2.5">
                 <p className="text-[9px] font-semibold uppercase tracking-wider text-amber-700">

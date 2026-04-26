@@ -13,6 +13,27 @@ export interface AdjacentSkill {
   estimated_weeks: number;
 }
 
+export interface ScarcityIndex {
+  score: number;        // 0-95
+  label: string;
+  tier: "high" | "medium" | "low";
+  source: string;
+}
+
+export interface PolicySignal {
+  severity: "high" | "medium" | "low";
+  text: string;
+  source: string;
+}
+
+export interface SectorRisk {
+  sector: string;
+  avg_automation_score: number;
+  isco_code_count: number;
+  min_score: number;
+  max_score: number;
+}
+
 export interface Skill {
   id: string;
   label: string;
@@ -26,6 +47,7 @@ export interface Skill {
   iloTaskType?: string;
   resilienceNote?: string;
   adjacentSkills?: AdjacentSkill[];
+  scarcityIndex?: ScarcityIndex;
 }
 
 export interface UserProfile {
@@ -129,6 +151,8 @@ export interface PolicymakerLiveStats {
   top_growth_sectors: Array<{ sector: string; growth_pct: number; demand_gap_pct: number; source: string }>;
   aggregate_intelligence: AggregateIntelligence | null;
   task_bucket_averages: Record<string, number>;
+  policy_signals: PolicySignal[];
+  sector_risk_profile: SectorRisk[];
 }
 
 // Keep for backward compat

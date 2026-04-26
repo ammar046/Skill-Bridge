@@ -220,15 +220,19 @@ function Onboarding() {
                     <button
                       key={g}
                       type="button"
-                      onClick={() => setData({ ...data, gender: g })}
+                      onClick={() => {
+                        setData({ ...data, gender: g });
+                        setTimeout(() => next(), 120);
+                      }}
                       className={
-                        "rounded-full border px-4 py-2 text-sm font-medium transition-all " +
+                        "inline-flex items-center gap-1.5 rounded-full border px-4 py-2 text-sm font-medium transition-all " +
                         (data.gender === g
                           ? "border-foreground bg-foreground text-background"
                           : "border-hairline bg-background text-foreground hover:bg-muted")
                       }
                     >
                       {{ female: t("common.woman", uiLocale), male: t("common.man", uiLocale), other: t("common.non_binary", uiLocale) }[g]}
+                      {data.gender === g && <Check className="h-3.5 w-3.5" />}
                     </button>
                   ))}
                 </div>
@@ -286,27 +290,29 @@ function Onboarding() {
               {t("onboarding.skip", uiLocale)}
             </button>
           )}
-          <button
-            onClick={next}
-            disabled={(!canNext && phase.status === "idle") || isProcessing}
-            className="group inline-flex items-center gap-2 rounded-full bg-foreground px-6 py-3 text-sm font-semibold text-background shadow-lift transition-all hover:translate-y-[-1px] disabled:translate-y-0 disabled:opacity-40 disabled:shadow-none"
-          >
-            {isProcessing ? (
-              <span className="flex items-center gap-2">
-                <span className="h-2 w-2 animate-pulse-dot rounded-full bg-background" />
-                {t("common.processing", uiLocale)}
-              </span>
-            ) : idx === STEPS.length - 1 ? (
-              <>
-                {t("onboarding.build_profile", uiLocale)} <Check className="h-4 w-4" />
-              </>
-            ) : (
-              <>
-                {t("onboarding.next", uiLocale)}{" "}
-                <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
-              </>
-            )}
-          </button>
+          {step !== "gender" && (
+            <button
+              onClick={next}
+              disabled={(!canNext && phase.status === "idle") || isProcessing}
+              className="group inline-flex items-center gap-2 rounded-full bg-foreground px-6 py-3 text-sm font-semibold text-background shadow-lift transition-all hover:translate-y-[-1px] disabled:translate-y-0 disabled:opacity-40 disabled:shadow-none"
+            >
+              {isProcessing ? (
+                <span className="flex items-center gap-2">
+                  <span className="h-2 w-2 animate-pulse-dot rounded-full bg-background" />
+                  {t("common.processing", uiLocale)}
+                </span>
+              ) : idx === STEPS.length - 1 ? (
+                <>
+                  {t("onboarding.build_profile", uiLocale)} <Check className="h-4 w-4" />
+                </>
+              ) : (
+                <>
+                  {t("onboarding.next", uiLocale)}{" "}
+                  <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+                </>
+              )}
+            </button>
+          )}
         </div>
       </div>
     </div>

@@ -100,6 +100,11 @@ export type TranslationKey =
   | "readiness.low"
   | "readiness.medium"
   | "readiness.high"
+  | "readiness.index_today"
+  | "readiness.demand_note"
+  | "readiness.resilience_engine"
+  | "readiness.learn_prefix"
+  | "readiness.lift_resilience"
   // Opportunities
   | "opp.page_label"
   | "opp.title"
@@ -245,6 +250,11 @@ const translations: Record<UILocale, Record<TranslationKey, string>> = {
     "readiness.low": "LOW",
     "readiness.medium": "MEDIUM",
     "readiness.high": "HIGH",
+    "readiness.index_today": "index 100 = today",
+    "readiness.demand_note": "Region-specific projection of demand for your skill mix.",
+    "readiness.resilience_engine": "Resilience suggestion · UNMAPPED engine",
+    "readiness.learn_prefix": "Learn",
+    "readiness.lift_resilience": "to lift resilience by",
     // Opportunities
     "opp.page_label": "Honest opportunity matching",
     "opp.title": "Real roles. Real wages. No spin.",
@@ -390,6 +400,11 @@ const translations: Record<UILocale, Record<TranslationKey, string>> = {
     "readiness.low": "کم",
     "readiness.medium": "درمیانہ",
     "readiness.high": "زیادہ",
+    "readiness.index_today": "انڈیکس 100 = آج",
+    "readiness.demand_note": "آپ کی مہارتوں کی طلب کا علاقائی تخمینہ۔",
+    "readiness.resilience_engine": "لچک کی تجویز · UNMAPPED",
+    "readiness.learn_prefix": "سیکھیں",
+    "readiness.lift_resilience": "تاکہ لچک بڑھے",
     // Opportunities
     "opp.page_label": "سچے مواقع",
     "opp.title": "حقیقی کام۔ حقیقی اجرت۔ کوئی جھوٹ نہیں۔",

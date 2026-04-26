@@ -35,12 +35,14 @@ try:
         get_ilo_task_label,
         get_ilo_task_type,
     )
-    from ..services.institutional_data import get_automation_itu_context
+    from ..services.institutional_data import compute_scarcity_index, get_automation_itu_context
+    from ..services.search_engine import build_hiring_query
 except (ImportError, ModuleNotFoundError):
     from models.schemas import AdjacentSkill, ExtractedSkill, OpportunityMatch, ProfileResponse
     from services.adjacency_engine import get_adjacent_skills
     from services.frey_osborne import classify, get_fo_score, get_ilo_task_label, get_ilo_task_type
-    from services.institutional_data import get_automation_itu_context
+    from services.institutional_data import compute_scarcity_index, get_automation_itu_context
+    from services.search_engine import build_hiring_query
 
 
 def _tavily_search(query: str, max_results: int = 2) -> list[dict]:
@@ -124,9 +126,12 @@ def _build_resilience_note(
 def _enrich_single_skill(
     skill: ExtractedSkill,
     city: str,
+    locale_code: str,
     lmic_discount_pct: int,
     medium_threshold: float,
     high_threshold: float,
+    hci: float,
+    internet_pct: float,
 ) -> ExtractedSkill:
     """Enrich one skill: compute real F-O score, run Tavily, build grounded note."""
     # Step 1 — Real F-O score from Oxford lookup table
@@ -136,11 +141,8 @@ def _enrich_single_skill(
     ilo_type = get_ilo_task_type(skill.isco_code)
     task_label = get_ilo_task_label(ilo_type)
 
-    # Step 3 — Tavily search for city-specific demand
-    query = (
-        f'"{skill.label}" OR "ISCO {skill.isco_code}" jobs demand employment '
-        f'"{city}" 2025 2026 informal economy'
-    )
+    # Step 3 — Targeted Tavily search: ISCO label + user city (not generic country)
+    query = build_hiring_query(isco_label=skill.label, city=city, locale_code=locale_code)
     results = _tavily_search(query, max_results=3)
 
     # Step 4 — Grounded resilience note
@@ -170,6 +172,14 @@ def _enrich_single_skill(
         for a in raw_adjacent
     ]
 
+    # Step 7 — Regional scarcity index (deterministic proxy, not AI)
+    scarcity = compute_scarcity_index(
+        isco_code=skill.isco_code,
+        automation_score=fo_lmic,
+        hci=hci,
+        internet_pct=internet_pct,
+    )
+
     return ExtractedSkill(
         label=skill.label,
         isco_code=skill.isco_code,
@@ -179,6 +189,7 @@ def _enrich_single_skill(
         ilo_task_type=ilo_type,
         resilience_note=note,
         adjacent_skills=adjacent,
+        scarcity_index=scarcity,
     )
 
 
@@ -196,6 +207,8 @@ def enrich_profile(
     lmic_discount = itu_ctx.get("lmic_discount_pct", 20)
     high_thresh = itu_ctx.get("frey_osborne_high_threshold", 0.65)
     medium_thresh = itu_ctx.get("frey_osborne_medium_threshold", 0.40)
+    hci: float = itu_ctx.get("hci_score", 0.45)
+    internet_pct: float = itu_ctx.get("internet_penetration_pct") or 35.0
 
     city = user_city.strip() or "the region"
 
@@ -208,9 +221,12 @@ def enrich_profile(
                 _enrich_single_skill,
                 skill,
                 city,
+                locale_code,
                 lmic_discount,
                 medium_thresh,
                 high_thresh,
+                hci,
+                internet_pct,
             ): idx
             for idx, skill in enumerate(skills)
         }
