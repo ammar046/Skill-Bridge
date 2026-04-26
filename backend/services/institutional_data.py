@@ -18,6 +18,7 @@ from __future__ import annotations
 import json
 import os
 import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Any
 
 import wbgapi
@@ -25,9 +26,11 @@ import wbgapi
 try:
     from ..config.loader import get_locale
     from ..models.schemas import PolicySignal, SkillAggregate
+    from .econometrics import fetch_ilo_wage
 except (ImportError, ModuleNotFoundError):
     from config.loader import get_locale
     from models.schemas import PolicySignal, SkillAggregate
+    from econometrics import fetch_ilo_wage
 
 # ─── Configuration ───────────────────────────────────────────────────────────
 
@@ -41,6 +44,11 @@ _ISO3_MAP = {
 
 # World Bank WDI indicator codes — all sourced from authoritative institutions
 _WB_INDICATORS: dict[str, dict[str, str]] = {
+    "hci_score": {
+        "code": "SP.HCI.OVRL",
+        "source": "World Bank Human Capital Project 2024 · WDI (SP.HCI.OVRL)",
+        "label": "Human Capital Index (0–1)",
+    },
     "gross_secondary_enrollment_pct": {
         "code": "SE.SEC.ENRR",
         "source": "World Bank WDI 2024 · UNESCO Institute for Statistics",
@@ -138,9 +146,19 @@ def _fetch_wb_indicator(indicator_code: str, iso3: str) -> tuple[float | None, s
 
 
 def _fetch_all_wb(iso3: str) -> dict[str, tuple[float | None, str | None]]:
+    """Fetch all WB indicators in parallel — reduces wall time from O(n) to O(1) latency."""
     results: dict[str, tuple[float | None, str | None]] = {}
-    for key, meta in _WB_INDICATORS.items():
-        results[key] = _fetch_wb_indicator(meta["code"], iso3)
+    with ThreadPoolExecutor(max_workers=len(_WB_INDICATORS)) as pool:
+        future_to_key = {
+            pool.submit(_fetch_wb_indicator, meta["code"], iso3): key
+            for key, meta in _WB_INDICATORS.items()
+        }
+        for future in as_completed(future_to_key, timeout=15):
+            key = future_to_key[future]
+            try:
+                results[key] = future.result()
+            except Exception:
+                results[key] = (None, None)
     return results
 
 
@@ -164,8 +182,12 @@ def get_live_indicators(locale_code: str) -> dict[str, Any]:
     wit = baseline.get("wittgenstein_projections", {})
     fo = baseline.get("frey_osborne_lmic_calibration", {})
 
-    # ── Tier 1: World Bank live fetch ────────────────────────────────────────
-    wb_live = _fetch_all_wb(iso3)
+    # ── Tier 1 + 2: World Bank + ILO in parallel ─────────────────────────────
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        wb_future = pool.submit(_fetch_all_wb, iso3)
+        ilo_future = pool.submit(fetch_ilo_wage, locale_code)
+        wb_live = wb_future.result(timeout=20)
+        ilo_wage = ilo_future.result(timeout=12)
 
     def wb(key: str) -> dict[str, Any]:
         val, yr = wb_live.get(key, (None, None))
@@ -182,29 +204,43 @@ def get_live_indicators(locale_code: str) -> dict[str, Any]:
             label=meta["label"],
         )
 
-    # ── Tier 2: ILO wage floor (ILO SDMX API unreachable — serve published baseline) ──
-    wage_floor = _indicator(
-        float(ilo_base.get("wage_floor_local", 0)),
-        f"ILO Global Wage Report 2024 · ILOSTAT published tables · {ilo_base.get('source', 'ILOSTAT 2024')}",
-        year="2024",
-        live=False,
-        label=f"Estimated median wage floor ({baseline.get('currency', '')})",
-    )
+    # ── Tier 1b: HCI — try live WB first, fall back to published report ──
+    hci_live_ind = wb("hci_score")
+    if not hci_live_ind.get("live"):
+        # WB occasionally errors on SP.HCI.OVRL; use published HCI 2024 as fallback
+        hci = _indicator(
+            float(wb_base.get("hci_score", 0)),
+            "World Bank Human Capital Index 2024 · Published report (SP.HCI.OVRL)",
+            year="2024",
+            live=False,
+            label="Human Capital Index (0–1)",
+        )
+    else:
+        hci = hci_live_ind
+
+    # ── Tier 2: ILO wage floor — use result from parallel fetch above ──
+    if ilo_wage.live and ilo_wage.value:
+        wage_floor = _indicator(
+            ilo_wage.value,
+            ilo_wage.source,
+            year=ilo_wage.year,
+            live=True,
+            label=f"Mean monthly earnings ({baseline.get('currency', '')})",
+        )
+    else:
+        wage_floor = _indicator(
+            float(ilo_base.get("wage_floor_local", 0)),
+            f"ILO Global Wage Report 2024 · ILOSTAT published tables · {ilo_base.get('source', 'ILOSTAT 2024')}",
+            year="2024",
+            live=False,
+            label=f"Estimated wage floor ({baseline.get('currency', '')})",
+        )
     wage_floor_ppp = _indicator(
         float(ilo_base.get("wage_floor_usd_ppp", 0)),
         "ILO Global Wage Report 2024 · PPP-adjusted",
         year="2024",
         live=False,
         label="Wage floor (USD PPP)",
-    )
-
-    # ── HCI — WB API returning JSON errors on this endpoint; use published report ──
-    hci = _indicator(
-        float(wb_base.get("hci_score", 0)),
-        "World Bank Human Capital Index 2024 · Published report (SP.HCI.OVRL)",
-        year="2024",
-        live=False,
-        label="Human Capital Index (0–1)",
     )
 
     # ── Automation risk inputs (Frey-Osborne + ITU internet) ──
@@ -274,13 +310,15 @@ def get_live_indicators(locale_code: str) -> dict[str, Any]:
             "fetched_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
             "cache_ttl_hours": _CACHE_TTL_SECONDS // 3600,
             "live_count": sum(
-                1 for k, v in {
-                    "secondary": wb("gross_secondary_enrollment_pct"),
-                    "internet": internet_ind,
-                    "neet": wb("neet_rate_pct"),
-                    "vuln": wb("vulnerable_employment_pct"),
-                    "gdp": wb("gdp_per_capita_ppp"),
-                }.items()
+                1 for v in [
+                    hci,
+                    wb("gross_secondary_enrollment_pct"),
+                    internet_ind,
+                    wb("neet_rate_pct"),
+                    wb("vulnerable_employment_pct"),
+                    wb("gdp_per_capita_ppp"),
+                    wage_floor,
+                ]
                 if isinstance(v, dict) and v.get("live")
             ),
         },

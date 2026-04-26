@@ -210,13 +210,25 @@ export async function getReadiness(
   const band: ReadinessReport["riskBand"] =
     score < 40 ? "LOW" : score < 65 ? "MEDIUM" : "HIGH";
 
-  // Wittgenstein-style trend: durable skills improve, at-risk decline
-  // Slope derived from ILO sector growth indices rather than hardcoded
-  const slope = band === "HIGH" ? -2.8 : band === "MEDIUM" ? 1.2 : 3.6;
-  const trend = Array.from({ length: 11 }, (_, i) => ({
-    year: 2025 + i,
-    index: Math.round(100 + i * slope + (i % 2 ? 1 : -1) * 1.5),
-  }));
+  // Demand trend anchored to real Wittgenstein Centre SSP2 enrollment projections.
+  // Secondary enrollment growth = more credentialled workers entering the market.
+  // For durable skills: rising demand tracks enrollment growth (positive).
+  // For at-risk skills: automation risk dampens demand despite enrollment growth.
+  const witt = _locale.wittgensteinProjections;
+  const e2025 = witt.secondary_enrollment_2025;
+  const e2030 = witt.secondary_enrollment_2030;
+  const e2035 = witt.secondary_enrollment_2035;
+  const riskPenalty = band === "HIGH" ? -3.5 : band === "MEDIUM" ? -1.0 : 0;
+  const trend = Array.from({ length: 11 }, (_, i) => {
+    const year = 2025 + i;
+    // Interpolate enrollment between milestones (2025→2030→2035)
+    const enrollBase = i <= 5
+      ? e2025 + (e2030 - e2025) * (i / 5)
+      : e2030 + (e2035 - e2030) * ((i - 5) / 5);
+    // Normalize to index 100 = 2025 baseline, then apply automation risk penalty
+    const enrollIdx = (enrollBase / e2025) * 100;
+    return { year, index: Math.round(enrollIdx + riskPenalty * i) };
+  });
 
   // Most resilient skill = lowest F-O score
   const durablesorted = [...profile.skills]

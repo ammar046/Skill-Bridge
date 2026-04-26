@@ -1,7 +1,10 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useState, useEffect } from "react";
 import { ArrowRight, Wifi, ShieldCheck, BarChart3, Quote } from "lucide-react";
 import { useApp } from "@/context/AppContext";
+import { getPolicymakerStats } from "@/lib/api";
 import { t } from "@/lib/i18n";
+import type { PolicymakerLiveStats } from "@/types/api";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -19,6 +22,17 @@ export const Route = createFileRoute("/")({
 
 function Index() {
   const { locale, profile, uiLocale } = useApp();
+  const [liveStats, setLiveStats] = useState<PolicymakerLiveStats | null>(null);
+  const [statsLoading, setStatsLoading] = useState(true);
+
+  useEffect(() => {
+    setStatsLoading(true);
+    setLiveStats(null);
+    getPolicymakerStats(locale)
+      .then(setLiveStats)
+      .catch(() => {/* silently fall back to static values */})
+      .finally(() => setStatsLoading(false));
+  }, [locale.code]);
   return (
     <div className="space-y-16 py-2 md:space-y-24">
       {/* HERO — editorial broadsheet */}
@@ -88,8 +102,13 @@ function Index() {
             <div className="pointer-events-none absolute inset-x-0 top-0 h-1 bg-holo opacity-70" />
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
-                <span className="h-1.5 w-1.5 animate-pulse-dot rounded-full bg-signal-durable" />
+                <span className={`h-1.5 w-1.5 rounded-full ${statsLoading ? "bg-amber-400 animate-pulse" : liveStats ? "animate-pulse-dot bg-signal-durable" : "bg-muted-foreground"}`} />
                 {t("home.live_signals", uiLocale)}
+                {liveStats && (
+                  <span className="rounded bg-signal-durable/10 px-1 py-0.5 text-[9px] font-bold text-signal-durable">
+                    {liveStats.live_indicators_count} LIVE
+                  </span>
+                )}
               </div>
               <span className="num text-[10px] font-medium text-muted-foreground">
                 {locale.currency}
@@ -98,39 +117,48 @@ function Index() {
 
             <div className="mt-5 space-y-4">
               <SignalRow
-                label={`ILO wage floor · ${locale.wageFloorSource.split("·")[0].trim()}`}
-                value={`${locale.currencySymbol} ${locale.sampleWageFloor.toLocaleString()}`}
+                label={`ILO wage floor · ${liveStats?.wage_floor_local.source.split("·")[0].trim() ?? locale.wageFloorSource.split("·")[0].trim()}`}
+                value={`${locale.currencySymbol} ${(liveStats?.wage_floor_local.value ?? locale.sampleWageFloor).toLocaleString()}`}
                 unit="/mo"
-                delta="+3.4%"
+                live={liveStats?.wage_floor_local.live ?? false}
+                loading={statsLoading}
+                spark={[12, 14, 13, 16, 18, 17, 20, 22, 21, liveStats?.wage_floor_local.value ?? locale.sampleWageFloor]}
                 positive
-                spark={[12, 14, 13, 16, 18, 17, 20, 22, 21, 24]}
               />
               <SignalRow
-                label="Youth NEET rate · ILO 2024"
-                value={`${locale.policymakerStats.neetRate.toFixed(1)}`}
+                label={`Youth NEET rate · ${liveStats?.neet_rate_pct.source.split("·")[0].trim() ?? "ILO 2024"}`}
+                value={(liveStats?.neet_rate_pct.value ?? locale.policymakerStats.neetRate).toFixed(1)}
                 unit="%"
-                delta="critical"
-                spark={[20, 22, 21, 24, 25, 26, 27, 28, 28, 28.4]}
+                live={liveStats?.neet_rate_pct.live ?? false}
+                loading={statsLoading}
+                spark={[20, 22, 21, 24, 25, 26, 27, 28, 28, liveStats?.neet_rate_pct.value ?? locale.policymakerStats.neetRate]}
               />
               <SignalRow
-                label="World Bank HCI · 0–1"
-                value={locale.policymakerStats.hciScore.toFixed(2)}
+                label={`World Bank HCI · ${liveStats?.hci_score.source.split("·")[0].trim() ?? "WB 2024"}`}
+                value={(liveStats?.hci_score.value ?? locale.policymakerStats.hciScore).toFixed(2)}
                 unit=""
-                delta="stable"
-                spark={[0.4, 0.41, 0.42, 0.42, 0.43, 0.44, 0.44, 0.45, 0.45, 0.45]}
+                live={liveStats?.hci_score.live ?? false}
+                loading={statsLoading}
+                spark={[0.4, 0.41, 0.42, 0.42, 0.43, 0.44, 0.44, 0.45, 0.45, liveStats?.hci_score.value ?? locale.policymakerStats.hciScore]}
+                positive
               />
               <SignalRow
-                label="UNESCO secondary enrollment"
-                value={`${locale.policymakerStats.enrollment.toFixed(1)}`}
+                label={`Secondary enrollment · ${liveStats?.gross_secondary_enrollment_pct.source.split("·")[0].trim() ?? "UNESCO"}`}
+                value={(liveStats?.gross_secondary_enrollment_pct.value ?? locale.policymakerStats.enrollment).toFixed(1)}
                 unit="%"
-                delta="+1.1%"
+                live={liveStats?.gross_secondary_enrollment_pct.live ?? false}
+                loading={statsLoading}
+                spark={[60, 62, 64, 66, 67, 68, 70, 71, 72, liveStats?.gross_secondary_enrollment_pct.value ?? locale.policymakerStats.enrollment]}
                 positive
-                spark={[60, 62, 64, 66, 67, 68, 70, 71, 72, locale.policymakerStats.enrollment]}
               />
             </div>
 
             <p className="mt-5 border-t border-hairline pt-3 text-[10px] uppercase tracking-wider text-muted-foreground">
-              Sources are mocked for the demo · contracts mirror future FastAPI shapes
+              {liveStats
+                ? `World Bank WDI · ILOSTAT · fetched ${liveStats.fetched_at.slice(0, 10)} · ${liveStats.live_indicators_count} indicators live`
+                : statsLoading
+                  ? "Fetching live indicators from World Bank WDI…"
+                  : "World Bank WDI · ILOSTAT 2024 · Published baselines"}
             </p>
           </div>
         </aside>
@@ -222,15 +250,17 @@ function SignalRow({
   label,
   value,
   unit,
-  delta,
   positive,
+  live,
+  loading,
   spark,
 }: {
   label: string;
   value: string;
   unit: string;
-  delta: string;
   positive?: boolean;
+  live?: boolean;
+  loading?: boolean;
   spark: number[];
 }) {
   const max = Math.max(...spark);
@@ -249,11 +279,13 @@ function SignalRow({
   return (
     <div className="flex items-center justify-between gap-3 border-b border-hairline pb-3 last:border-0 last:pb-0">
       <div className="min-w-0 flex-1">
-        <div className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
+        <div className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground truncate">
           {label}
         </div>
         <div className="mt-1 flex items-baseline gap-1">
-          <span className="num text-lg font-semibold text-foreground">{value}</span>
+          <span className={`num text-lg font-semibold ${loading ? "text-muted-foreground/50" : "text-foreground"}`}>
+            {value}
+          </span>
           <span className="num text-xs text-muted-foreground">{unit}</span>
         </div>
       </div>
@@ -268,12 +300,11 @@ function SignalRow({
         />
       </svg>
       <span
-        className={
-          "num w-16 text-right text-xs font-semibold " +
-          (positive ? "text-signal-durable" : "text-muted-foreground")
-        }
+        className={`num w-10 text-right text-[9px] font-bold uppercase tracking-wide ${
+          live ? "text-signal-durable" : "text-muted-foreground/50"
+        }`}
       >
-        {delta}
+        {loading ? "…" : live ? "LIVE" : "PUB"}
       </span>
     </div>
   );

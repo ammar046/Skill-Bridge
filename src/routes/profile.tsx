@@ -1,11 +1,12 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { ArrowRight, Quote, Sparkles, AlertCircle } from "lucide-react";
 import { useApp } from "@/context/AppContext";
+import { getPolicymakerStats } from "@/lib/api";
 import { SignalPill } from "@/components/SignalPill";
 import { SkillBadge } from "@/components/SkillBadge";
 import { t } from "@/lib/i18n";
-import type { Skill } from "@/types/api";
+import type { PolicymakerLiveStats, Skill } from "@/types/api";
 
 export const Route = createFileRoute("/profile")({
   head: () => ({ meta: [{ title: "Skills Profile · UNMAPPED" }] }),
@@ -15,10 +16,17 @@ export const Route = createFileRoute("/profile")({
 function Profile() {
   const { profile, locale, uiLocale, gender: ctxGender } = useApp();
   const navigate = useNavigate();
+  const [liveStats, setLiveStats] = useState<PolicymakerLiveStats | null>(null);
 
   useEffect(() => {
     if (!profile) navigate({ to: "/onboarding" });
   }, [profile, navigate]);
+
+  useEffect(() => {
+    getPolicymakerStats(locale)
+      .then(setLiveStats)
+      .catch(() => {/* fall back to static locale values */});
+  }, [locale.code]);
 
   if (!profile) return null;
 
@@ -29,8 +37,15 @@ function Profile() {
   );
 
   const isFemale = (profile.gender ?? ctxGender) === "female";
-  const gapPct = Math.round(locale.genderWageGap * 100);
+  // Use live gender wage gap from backend if available, fall back to static locale
+  const gapPct = liveStats
+    ? Math.round((liveStats.gender_wage_gap.value ?? locale.genderWageGap) * (liveStats.gender_wage_gap.value != null ? 1 : 100))
+    : Math.round(locale.genderWageGap * 100);
+  const gapSource = liveStats?.gender_wage_gap.source ?? locale.genderWageGapSource;
   const witt = locale.wittgensteinProjections;
+  // Use live Wittgenstein narrative from backend if available
+  const wittNarrative = liveStats?.wittgenstein_note ?? witt.narrative;
+  const wittSource = liveStats?.wittgenstein_source ?? witt.source;
 
   const wittPoints = [
     { year: "2025", value: witt.secondary_enrollment_2025 },
@@ -87,7 +102,7 @@ function Profile() {
               : `Wage floor shown is ILO-adjusted for gender. Women in ${locale.country} earn approximately `}
             {uiLocale !== "ur" && <><strong>{gapPct}% less</strong> than the regional average.</>}{" "}
             <span className="inline-flex items-center gap-1 rounded border border-amber-300 bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-amber-700">
-              Source: {locale.genderWageGapSource}
+              Source: {gapSource}
             </span>
           </p>
         </div>
@@ -144,11 +159,11 @@ function Profile() {
           })}
         </div>
 
-        <p className="mt-4 text-sm leading-relaxed text-foreground">{witt.narrative}</p>
+        <p className="mt-4 text-sm leading-relaxed text-foreground">{wittNarrative}</p>
 
         <div className="mt-3 flex flex-wrap items-center gap-3">
           <span className="inline-flex items-center gap-1 rounded border border-hairline bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
-            Source: {witt.source}
+            Source: {wittSource}
           </span>
           <p className="text-[13px] text-muted-foreground">
             {t("profile.witt_implication", uiLocale)}

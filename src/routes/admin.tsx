@@ -185,7 +185,7 @@ function PolicymakerDashboard() {
       <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-hairline bg-paper px-4 py-3 text-[11px]">
         <span className="flex items-center gap-1.5 font-semibold text-signal-durable">
           <span className="h-2 w-2 animate-pulse-dot rounded-full bg-signal-durable" />
-          Live data: World Bank WDI · ILOSTAT · Tavily
+          Live data: World Bank WDI · ILOSTAT
         </span>
         <span className="flex items-center gap-1.5 text-muted-foreground">
           <Database className="h-3 w-3" />
