@@ -15,7 +15,10 @@ import type {
 } from "@/types/api";
 import { LOCALES, type Locale } from "@/lib/locales";
 
-export const API_BASE = "http://localhost:8000";
+/** Set in Vercel / production: VITE_API_BASE_URL=https://your-api.onrender.com (no trailing slash) */
+export const API_BASE =
+  (import.meta.env.VITE_API_BASE_URL as string | undefined)?.replace(/\/$/, "") ||
+  "http://localhost:8000";
 
 // ─── Core fetch primitive ────────────────────────────────────────────────────
 

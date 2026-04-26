@@ -22,20 +22,33 @@ app = FastAPI(title="Skill Bridge API")
 def _init_assessment_db() -> None:
     assessment_persistence.init_db()
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=[
+
+def _cors_config() -> dict:
+    """Local dev + optional CORS_ORIGINS + regex for Vercel (*.vercel.app)."""
+    origins = [
         "http://localhost:8080",
         "http://localhost:5173",
         "http://localhost:5174",
         "http://localhost:3000",
         "http://127.0.0.1:5173",
         "http://127.0.0.1:5174",
-    ],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+    ]
+    extra = os.getenv("CORS_ORIGINS", "").strip()
+    if extra:
+        origins.extend(o.strip() for o in extra.split(",") if o.strip())
+    cfg: dict = {
+        "allow_origins": origins,
+        "allow_credentials": True,
+        "allow_methods": ["*"],
+        "allow_headers": ["*"],
+    }
+    rx = os.getenv("CORS_ORIGIN_REGEX", r"https://.*\.vercel\.app").strip()
+    if rx:
+        cfg["allow_origin_regex"] = rx
+    return cfg
+
+
+app.add_middleware(CORSMiddleware, **_cors_config())
 
 app.include_router(api_router)
 

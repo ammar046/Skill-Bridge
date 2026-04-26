@@ -7,7 +7,7 @@ import {
 } from "lucide-react";
 import jsPDF from "jspdf";
 import { useApp } from "@/context/AppContext";
-import { getPolicymakerStats } from "@/lib/api";
+import { API_BASE, getPolicymakerStats } from "@/lib/api";
 import type { AggregateIntelligence, PolicymakerLiveStats, SkillAggregate } from "@/types/api";
 import { LiveKpi, SourceBadge } from "@/components/SourceBadge";
 
@@ -689,7 +689,10 @@ function ErrorState({ message }: { message: string }) {
       <AlertCircle className="mx-auto h-8 w-8 text-signal-risk" />
       <p className="mt-3 font-semibold text-foreground">Failed to load policymaker data</p>
       <p className="mt-1 rounded-lg border border-signal-risk/30 bg-signal-risk-soft p-3 font-mono text-xs text-signal-risk">{message}</p>
-      <p className="mt-3 text-xs text-muted-foreground">Ensure the backend is running at localhost:8000</p>
+      <p className="mt-3 text-xs text-muted-foreground">
+        Ensure the API is reachable at <span className="font-mono">{API_BASE}</span> (set{" "}
+        <span className="font-mono">VITE_API_BASE_URL</span> when deploying the frontend).
+      </p>
     </div>
   );
 }
