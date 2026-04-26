@@ -74,6 +74,7 @@ except (ImportError, ModuleNotFoundError):
     )
     from services.search_engine import find_market_signals, find_training
     from services.skill_enricher import enrich_profile
+    from services import assessment_persistence
 
 logger = logging.getLogger(__name__)
 

@@ -30,7 +30,7 @@ try:
 except (ImportError, ModuleNotFoundError):
     from config.loader import get_locale
     from models.schemas import PolicySignal, SkillAggregate
-    from econometrics import fetch_ilo_wage
+    from services.econometrics import fetch_ilo_wage
 
 # ─── Configuration ───────────────────────────────────────────────────────────
 
