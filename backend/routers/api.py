@@ -42,6 +42,7 @@ try:
     )
     from ..services.search_engine import find_market_signals, find_training
     from ..services.skill_enricher import enrich_profile
+    from ..services.wage_calibration import apply_calibrated_wages
     from ..services import assessment_persistence
 except (ImportError, ModuleNotFoundError):
     from config.loader import get_econometric_signal, get_locale
@@ -74,6 +75,7 @@ except (ImportError, ModuleNotFoundError):
     )
     from services.search_engine import find_market_signals, find_training
     from services.skill_enricher import enrich_profile
+    from services.wage_calibration import apply_calibrated_wages
     from services import assessment_persistence
 
 logger = logging.getLogger(__name__)
@@ -265,10 +267,14 @@ def _apply_post_processing(
 ) -> ProfileResponse:
     """
     Shared post-processing applied after BOTH agent and linear paths:
+      - ILO-based wage calibration (occupation × location on national mean)
       - Gender wage adjustment
       - Assessment store append (including agent_meta fields)
       - SHA-256 pass_id generation and verification store entry
     """
+    city_for_wage = (payload.region or enriched.user_city or "").strip()
+    apply_calibrated_wages(enriched, payload.locale, city_for_wage)
+
     # Gender wage adjustment
     if payload.gender == "female":
         try:
