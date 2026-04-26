@@ -10,10 +10,17 @@ load_dotenv(dotenv_path=Path(__file__).parent / ".env")
 
 try:
     from .routers.api import router as api_router
+    from .services import assessment_persistence
 except (ImportError, ModuleNotFoundError):
     from routers.api import router as api_router
+    from services import assessment_persistence
 
 app = FastAPI(title="Skill Bridge API")
+
+
+@app.on_event("startup")
+def _init_assessment_db() -> None:
+    assessment_persistence.init_db()
 
 app.add_middleware(
     CORSMiddleware,

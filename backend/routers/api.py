@@ -42,6 +42,7 @@ try:
     )
     from ..services.search_engine import find_market_signals, find_training
     from ..services.skill_enricher import enrich_profile
+    from ..services import assessment_persistence
 except (ImportError, ModuleNotFoundError):
     from config.loader import get_econometric_signal, get_locale
     from models.schemas import (
@@ -82,27 +83,15 @@ router = APIRouter(prefix="/api", tags=["api"])
 _verification_store: dict[str, dict] = {}
 
 
-def _load_seed_assessments() -> list[dict]:
-    """Load pre-generated seed records so the policymaker dashboard is never empty."""
-    seed_path = Path(__file__).parent.parent / "config" / "seed_assessments.json"
-    try:
-        with open(seed_path, "r", encoding="utf-8") as f:
-            return json.load(f)
-    except Exception:
-        return []
-
-
-# Assessment intelligence store — seeded from JSON on startup, then appended
-# by every successful /api/extract. Capped at 1000 records.
-assessment_store: list[dict] = _load_seed_assessments()
-
-
 def _compute_aggregate(locale_code: str) -> AggregateIntelligence | None:
     """
-    Compute aggregate skills intelligence from assessment_store for a given locale.
+    Compute aggregate skills intelligence from persisted assessments for a locale.
     Returns None if no records exist for the locale. Fast O(n) computation.
     """
-    records = [r for r in assessment_store if r.get("locale") == locale_code]
+    records = [
+        r for r in assessment_persistence.fetch_all()
+        if r.get("locale") == locale_code
+    ]
     if not records:
         return None
 
@@ -318,9 +307,7 @@ def _apply_post_processing(
             for s in enriched.user_skills
         ],
     }
-    if len(assessment_store) >= 1000:
-        assessment_store.pop(0)
-    assessment_store.append(assessment_record)
+    assessment_persistence.append_record(assessment_record)
 
     # SHA-256 pass_id
     issue_date = _date.today().isoformat()
@@ -422,14 +409,13 @@ def get_demo_fallback() -> dict:
     """
     Pre-generated extraction response for demo resilience.
     Fires automatically if the live pipeline fails during judging.
-    Also appends to assessment_store so /admin reflects the demo run.
+    Also appends to the assessment database so /admin reflects the demo run.
     """
     fallback_path = Path(__file__).parent.parent / "config" / "demo_fallback.json"
     with open(fallback_path, "r", encoding="utf-8") as f:
         data = json.load(f)
 
-    # Append to assessment_store so policymaker dashboard reflects this run
-    assessment_store.append({
+    assessment_persistence.append_record({
         "locale": data.get("locale", "gh"),
         "timestamp": _datetime.utcnow().isoformat(),
         "city": data.get("user_city", "Accra"),

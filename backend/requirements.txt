@@ -1,7 +1,13 @@
-fastapi
-uvicorn
-pydantic
-google-genai
-tavily-python
-python-dotenv
-wbgapi
+# Core API (Render) — pinned from backend/.venv; install: pip install -r requirements.txt
+fastapi==0.136.1
+uvicorn[standard]==0.46.0
+pydantic==2.13.3
+python-dotenv==1.2.2
+
+# AI & search
+google-genai==1.73.1
+tavily-python==0.7.23
+
+# Institutional / HTTP
+wbgapi==1.0.14
+requests==2.33.1

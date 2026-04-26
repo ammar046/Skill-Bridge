@@ -1,5 +1,6 @@
-# Python bytecode
+# Python bytecode (never commit)
 __pycache__/
+**/__pycache__/
 *.py[cod]
 *.pyo
 *.pyd
@@ -27,6 +28,11 @@ dist-ssr
 backend/.env
 backend/.venv/
 .venv/
+
+# SQLite assessment store (created at runtime; do not commit DB or WAL files)
+backend/data/assessments.sqlite
+backend/data/*.sqlite
+backend/data/*.sqlite-*
 
 # Wrangler / Cloudflare
 .wrangler/
