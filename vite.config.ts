@@ -6,4 +6,25 @@
 // You can pass additional config via defineConfig({ vite: { ... } }) if needed.
 import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 
-export default defineConfig();
+/**
+ * On Vercel (VERCEL=1 during build), emit static HTML + SPA shell. The default
+ * TanStack Start + Cloudflare build only outputs JS/CSS under dist/client, so
+ * a rewrite to /index.html serves nothing (NOT_FOUND). Locally / non-Vercel
+ * builds keep the Cloudflare plugin for Wrangler.
+ */
+const vercelStatic = process.env.VERCEL === "1";
+
+export default defineConfig({
+  ...(vercelStatic ? { cloudflare: false } : {}),
+  tanstackStart: vercelStatic
+    ? {
+        spa: {
+          enabled: true,
+          prerender: {
+            enabled: true,
+            crawlLinks: true,
+          },
+        },
+      }
+    : {},
+});
