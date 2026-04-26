@@ -5,6 +5,9 @@
     "city": "Accra",
     "gender": "female",
     "worker_name": "Amara K.",
+    "agent_ran": true,
+    "tool_calls_made": 7,
+    "agent_summary": "Electronics repair technician running a community repair shop in Accra with 5 years of market experience.",
     "skills": [
       {
         "isco_code": "7421",
@@ -28,6 +31,9 @@
     "city": "Accra",
     "gender": "male",
     "worker_name": "Kwame A.",
+    "agent_ran": true,
+    "tool_calls_made": 9,
+    "agent_summary": "Certified electrician and informal freight handler seeking transition to higher-resilience trade work in Accra.",
     "skills": [
       {
         "isco_code": "7411",
@@ -51,6 +57,9 @@
     "city": "Kumasi",
     "gender": "female",
     "worker_name": "Abena M.",
+    "agent_ran": true,
+    "tool_calls_made": 6,
+    "agent_summary": "Skilled tailor and community health aide in Kumasi with strong interpersonal service skills.",
     "skills": [
       {
         "isco_code": "7531",
@@ -74,6 +83,9 @@
     "city": "Kumasi",
     "gender": "male",
     "worker_name": "Kofi B.",
+    "agent_ran": true,
+    "tool_calls_made": 5,
+    "agent_summary": "Data entry clerk and informal procurement buyer in Kumasi with experience in market logistics.",
     "skills": [
       {
         "isco_code": "4132",
@@ -97,6 +109,9 @@
     "city": "Tamale",
     "gender": null,
     "worker_name": "Yaw D.",
+    "agent_ran": true,
+    "tool_calls_made": 8,
+    "agent_summary": "Subsistence crop farmer in Tamale who supplements income with informal electronics repair services.",
     "skills": [
       {
         "isco_code": "6111",
@@ -120,6 +135,9 @@
     "city": "Karachi",
     "gender": "female",
     "worker_name": "Fatima N.",
+    "agent_ran": true,
+    "tool_calls_made": 6,
+    "agent_summary": "Home-based tailor and market vendor in Karachi with over a decade of craft and retail experience.",
     "skills": [
       {
         "isco_code": "7531",
@@ -143,6 +161,9 @@
     "city": "Karachi",
     "gender": "male",
     "worker_name": "Hassan R.",
+    "agent_ran": true,
+    "tool_calls_made": 9,
+    "agent_summary": "Telecommunications equipment installer and electronics repairman in Karachi serving both domestic and commercial clients.",
     "skills": [
       {
         "isco_code": "7421",
@@ -166,6 +187,9 @@
     "city": "Lahore",
     "gender": "female",
     "worker_name": "Zainab Q.",
+    "agent_ran": true,
+    "tool_calls_made": 4,
+    "agent_summary": "Data entry specialist and business services agent in Lahore navigating high-automation-risk clerical roles.",
     "skills": [
       {
         "isco_code": "4132",
@@ -189,6 +213,9 @@
     "city": "Lahore",
     "gender": "male",
     "worker_name": "Bilal S.",
+    "agent_ran": true,
+    "tool_calls_made": 7,
+    "agent_summary": "Licensed electrician and part-time freight handler in Lahore seeking to consolidate his durable trade skills.",
     "skills": [
       {
         "isco_code": "7411",
@@ -212,6 +239,9 @@
     "city": "Faisalabad",
     "gender": null,
     "worker_name": "Ayesha T.",
+    "agent_ran": true,
+    "tool_calls_made": 5,
+    "agent_summary": "Experienced tailor and community health worker in Faisalabad textile district with dual craft and care skills.",
     "skills": [
       {
         "isco_code": "7531",

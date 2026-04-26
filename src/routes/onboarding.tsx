@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useRef, useState } from "react";
-import { ArrowRight, ArrowLeft, Check } from "lucide-react";
+import { ArrowRight, ArrowLeft, Check, MessageSquare } from "lucide-react";
 import { useApp } from "@/context/AppContext";
 import { buildProfile } from "@/lib/api";
 import { NarrativeInput } from "@/components/NarrativeInput";
@@ -27,6 +27,8 @@ function Onboarding() {
     narrative: "",
   });
   const [phase, setPhase] = useState<Phase>({ status: "idle" });
+  const [clarifyingQuestion, setClarifyingQuestion] = useState<string | null>(null);
+  const [clarifyingAnswer, setClarifyingAnswer] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const idx = STEPS.indexOf(step);
@@ -69,24 +71,37 @@ function Onboarding() {
     }
   }
 
-  async function submit() {
+  async function submit(answerOverride?: string) {
     setPhase({ status: "extracting" });
+    setClarifyingQuestion(null);
     scrollBottom();
 
     try {
       const gender = data.gender || null;
       if (gender) setGlobalGender(gender);
 
-      const profile = await buildProfile(
+      const result = await buildProfile(
         {
           name: data.name.trim(),
           age: data.age ? parseInt(data.age, 10) : null,
           gender: gender as "female" | "male" | "other" | null,
           region: data.region.trim(),
           narrative: data.narrative.trim(),
+          clarifyingAnswer: answerOverride ?? (clarifyingAnswer.trim() || undefined),
         },
         locale,
       );
+
+      // Agent needs one clarifying question before proceeding
+      if (result.status === "awaiting_clarification") {
+        setPhase({ status: "idle" });
+        setClarifyingQuestion(result.clarifying_question);
+        setClarifyingAnswer("");
+        scrollBottom();
+        return;
+      }
+
+      const profile = result.profile;
 
       setPhase({ status: "querying" });
 
@@ -97,18 +112,15 @@ function Onboarding() {
       }
 
       setPhase({ status: "standardizing" });
-      // Brief yield so the UI can paint the step
       await new Promise((r) => setTimeout(r, 400));
 
       setPhase({ status: "finalizing" });
       setProfile(profile);
-      // Save narrative for offline recovery
       localStorage.setItem("unmapped.savedNarrative", data.narrative);
       await new Promise((r) => setTimeout(r, 300));
 
       navigate({ to: "/profile" });
     } catch (err) {
-      // Persist narrative so user doesn't lose their work
       localStorage.setItem("unmapped.savedNarrative", data.narrative);
       setPhase({
         status: "error",
@@ -181,8 +193,8 @@ function Onboarding() {
           </div>
         ))}
 
-        {/* Active input step — hide while processing */}
-        {phase.status === "idle" && (
+        {/* Active input step — hide while processing or awaiting clarification */}
+        {phase.status === "idle" && !clarifyingQuestion && (
           <div className="space-y-3 animate-fade-up">
             <Bubble side="agent">
               <p className="display text-lg text-foreground">{STEP_QUESTIONS[step].q}</p>
@@ -254,6 +266,53 @@ function Onboarding() {
                   locale={locale}
                 />
               )}
+            </Bubble>
+          </div>
+        )}
+
+        {/* Agent clarifying question — shown after 202 response */}
+        {clarifyingQuestion && phase.status === "idle" && (
+          <div className="space-y-3 animate-fade-up">
+            <Bubble side="agent">
+              <div className="flex items-center gap-2 mb-1">
+                <MessageSquare className="h-3.5 w-3.5 text-muted-foreground" />
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  One quick question
+                </p>
+              </div>
+              <p className="text-sm text-foreground">{clarifyingQuestion}</p>
+            </Bubble>
+            <Bubble side="user" interactive>
+              <div className="flex w-full items-center gap-2">
+                <input
+                  autoFocus
+                  value={clarifyingAnswer}
+                  onChange={(e) => setClarifyingAnswer(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && clarifyingAnswer.trim().length >= 5) {
+                      void submit(clarifyingAnswer.trim());
+                    }
+                  }}
+                  minLength={5}
+                  placeholder="Type your answer…"
+                  className="flex-1 bg-transparent text-sm font-medium outline-none placeholder:text-foreground/40"
+                />
+                <button
+                  type="button"
+                  onClick={() => void submit(clarifyingAnswer.trim())}
+                  disabled={clarifyingAnswer.trim().length < 5}
+                  className="shrink-0 rounded-full bg-foreground px-3 py-1.5 text-xs font-semibold text-background disabled:opacity-30"
+                >
+                  →
+                </button>
+              </div>
+              <button
+                type="button"
+                onClick={() => void submit("")}
+                className="mt-2 text-[10px] text-muted-foreground underline underline-offset-2 hover:text-foreground"
+              >
+                Skip
+              </button>
             </Bubble>
           </div>
         )}

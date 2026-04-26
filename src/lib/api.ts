@@ -3,9 +3,12 @@
 
 import type {
   AdminAggregates,
+  AgentMeta,
+  AgentSearchDecision,
   MarketSignalsResponse,
   OpportunityMatch,
   PolicymakerLiveStats,
+  ProfileMatch,
   ReadinessReport,
   TrainingProvider,
   UserProfile,
@@ -95,11 +98,19 @@ type BackendOpportunityMatch = {
   gender_note?: string;
 };
 
+type BackendAgentMeta = {
+  agent_ran?: boolean;
+  agent_summary?: string;
+  tool_calls_made?: number;
+  search_decisions?: Array<{ skill: string; searched: boolean; reason: string }>;
+};
+
 type BackendProfileResponse = {
   user_skills: BackendExtractedSkill[];
   matches: BackendOpportunityMatch[];
   user_city: string;
   pass_id?: string;
+  agent_meta?: BackendAgentMeta;
 };
 
 type BackendTrainingProvider = {
@@ -130,6 +141,10 @@ function normalizeSkillStatus(status: string): "durable" | "at_risk" {
 
 // ─── Public API functions ────────────────────────────────────────────────────
 
+export type BuildProfileResult =
+  | { status: "complete"; profile: UserProfile }
+  | { status: "awaiting_clarification"; clarifying_question: string };
+
 export async function buildProfile(
   input: {
     name: string;
@@ -137,59 +152,134 @@ export async function buildProfile(
     gender: "female" | "male" | "other" | null;
     region: string;
     narrative: string;
+    clarifyingAnswer?: string;
   },
   locale: Locale,
-): Promise<UserProfile> {
+): Promise<BuildProfileResult> {
   let apiData: BackendProfileResponse;
+
+  // Raw fetch so we can intercept 202 before postWithTimeout throws
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 90000);
+  let rawRes: Response | null = null;
   try {
-    apiData = await postWithTimeout<BackendProfileResponse>("/api/extract", {
-      narrative: input.narrative,
-      locale: localeCode(locale),
-      region: input.region,
-      worker_name: input.name,
-      gender: input.gender ?? "",
-    }, 90000);
-  } catch {
-    // Silent demo fallback — transparent to the user, no error shown
+    rawRes = await fetch(`${API_BASE}/api/extract`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        narrative: input.narrative,
+        locale: localeCode(locale),
+        region: input.region,
+        worker_name: input.name,
+        gender: input.gender ?? "",
+        clarifying_answer: input.clarifyingAnswer ?? null,
+      }),
+      signal: controller.signal,
+    });
+    clearTimeout(timer);
+  } catch (err) {
+    clearTimeout(timer);
+    // Silent demo fallback on network/timeout error
+  }
+
+  // Agent needs clarification — return question to UI
+  if (rawRes?.status === 202) {
+    const body = await rawRes.json() as { clarifying_question: string };
+    return {
+      status: "awaiting_clarification",
+      clarifying_question: body.clarifying_question,
+    };
+  }
+
+  if (rawRes && rawRes.ok) {
+    apiData = await rawRes.json() as BackendProfileResponse;
+  } else {
+    // Silent demo fallback — transparent to user, no error shown
     const fallbackRes = await fetch(`${API_BASE}/api/demo-fallback`);
-    if (!fallbackRes.ok) throw new Error("Extraction unavailable. Please check your connection and try again.");
+    if (!fallbackRes.ok)
+      throw new Error("Extraction unavailable. Please check your connection and try again.");
     apiData = await fallbackRes.json() as BackendProfileResponse;
   }
 
-  const skills = apiData.user_skills.map((skill, idx) => ({
-    id: `sk_${idx}_${Date.now().toString(36)}`,
-    label: skill.label,
-    formalName: skill.label,
-    iscoCode: skill.isco_code,
-    escoUri: skill.esco_code,
-    classification: normalizeSkillStatus(skill.status),
-    confidence: skill.frey_osborne_score != null ? 1 - skill.frey_osborne_score : 0.8,
-    sourceQuote: input.narrative.slice(0, 140),
-    freyOsborneScore: skill.frey_osborne_score,
-    iloTaskType: skill.ilo_task_type,
-    resilienceNote: skill.resilience_note,
-    adjacentSkills: skill.adjacent_skills ?? [],
-    scarcityIndex: skill.scarcity_index
-      ? {
-          score: skill.scarcity_index.score,
-          label: skill.scarcity_index.label,
-          tier: skill.scarcity_index.tier as "high" | "medium" | "low",
-          source: skill.scarcity_index.source,
-        }
-      : undefined,
+  // Map search_decisions → per-skill flags for SkillBadge transparency
+  const searchDecisions = apiData.agent_meta?.search_decisions ?? [];
+  const searchMap = new Map(
+    searchDecisions.map((d) => [d.skill.toLowerCase(), d]),
+  );
+
+  const skills = apiData.user_skills.map((skill, idx) => {
+    const dec = searchMap.get(skill.label.toLowerCase());
+    return {
+      id: `sk_${idx}_${Date.now().toString(36)}`,
+      label: skill.label,
+      formalName: skill.label,
+      iscoCode: skill.isco_code,
+      escoUri: skill.esco_code,
+      classification: normalizeSkillStatus(skill.status),
+      confidence: skill.frey_osborne_score != null ? 1 - skill.frey_osborne_score : 0.8,
+      sourceQuote: input.narrative.slice(0, 140),
+      freyOsborneScore: skill.frey_osborne_score,
+      iloTaskType: skill.ilo_task_type,
+      resilienceNote: skill.resilience_note,
+      adjacentSkills: skill.adjacent_skills ?? [],
+      scarcityIndex: skill.scarcity_index
+        ? {
+            score: skill.scarcity_index.score,
+            label: skill.scarcity_index.label,
+            tier: skill.scarcity_index.tier as "high" | "medium" | "low",
+            source: skill.scarcity_index.source,
+          }
+        : undefined,
+      searchedByAgent: dec?.searched,
+      searchReason: dec?.reason,
+    };
+  });
+
+  const agentMeta: AgentMeta | undefined = apiData.agent_meta?.agent_ran
+    ? {
+        agentRan: true,
+        agentSummary: apiData.agent_meta.agent_summary,
+        toolCallsMade: apiData.agent_meta.tool_calls_made,
+        searchDecisions: (apiData.agent_meta.search_decisions ?? []).map(
+          (d): AgentSearchDecision => ({
+            skill: d.skill,
+            searched: d.searched,
+            reason: d.reason,
+          }),
+        ),
+      }
+    : undefined;
+
+  // Opportunity matches — carry through to profile so skills-card can show
+  // skill-specific wage floors rather than the locale's static baseline.
+  const matches: ProfileMatch[] = (apiData.matches ?? []).map((m) => ({
+    title: m.title,
+    wageFloor: m.wage_floor,
+    wageFloorAmount: parseCurrencyAmount(m.wage_floor),
+    growthPercent: m.growth_percent,
+    matchStrength: m.match_strength,
+    ilostatSource: m.ilostat_source,
+    returnsToEducationNote: m.returns_to_education_note,
+    genderAdjustedWageFloor: m.gender_adjusted_wage_floor,
+    genderNote: m.gender_note,
   }));
 
   return {
-    id: `usr_${Date.now().toString(36)}`,
-    name: input.name,
-    age: input.age,
-    gender: input.gender,
-    region: input.region,
-    userCity: apiData.user_city || input.region,
-    rawNarrative: input.narrative,
-    skills,
-    createdAt: new Date().toISOString(),
-    passId: apiData.pass_id,
+    status: "complete",
+    profile: {
+      id: `usr_${Date.now().toString(36)}`,
+      name: input.name,
+      age: input.age,
+      gender: input.gender,
+      region: input.region,
+      userCity: apiData.user_city || input.region,
+      rawNarrative: input.narrative,
+      skills,
+      matches,
+      createdAt: new Date().toISOString(),
+      passId: apiData.pass_id,
+      agentMeta,
+    },
   };
 }
 
@@ -267,6 +357,7 @@ export async function getOpportunities(
     narrative: _profile.rawNarrative,
     locale: localeCode(locale),
   }, 90000);
+  if (!Array.isArray(apiData.matches)) return [];
   return apiData.matches.map((item, idx) => ({
     id: `opp_${idx}_${Date.now().toString(36)}`,
     title: item.title,

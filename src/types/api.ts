@@ -34,6 +34,19 @@ export interface SectorRisk {
   max_score: number;
 }
 
+export interface AgentSearchDecision {
+  skill: string;
+  searched: boolean;
+  reason: string;
+}
+
+export interface AgentMeta {
+  agentRan: boolean;
+  agentSummary?: string;
+  toolCallsMade?: number;
+  searchDecisions?: AgentSearchDecision[];
+}
+
 export interface Skill {
   id: string;
   label: string;
@@ -48,6 +61,20 @@ export interface Skill {
   resilienceNote?: string;
   adjacentSkills?: AdjacentSkill[];
   scarcityIndex?: ScarcityIndex;
+  searchedByAgent?: boolean;
+  searchReason?: string;
+}
+
+export interface ProfileMatch {
+  title: string;
+  wageFloor: string;          // raw string e.g. "GHS 1,850"
+  wageFloorAmount: number;    // parsed numeric for sorting/display
+  growthPercent: string;
+  matchStrength: number;
+  ilostatSource?: string;
+  returnsToEducationNote?: string;
+  genderAdjustedWageFloor?: string;
+  genderNote?: string;
 }
 
 export interface UserProfile {
@@ -59,8 +86,10 @@ export interface UserProfile {
   userCity: string;
   rawNarrative: string;
   skills: Skill[];
+  matches: ProfileMatch[];
   createdAt: string;
   passId?: string;
+  agentMeta?: AgentMeta;
 }
 
 export interface ReadinessReport {

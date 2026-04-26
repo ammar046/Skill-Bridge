@@ -1,14 +1,22 @@
+import asyncio
 import hashlib
 import json
+import logging
+import os
 from collections import defaultdict
 from datetime import date as _date, datetime as _datetime
 from pathlib import Path
+
 from fastapi import APIRouter, HTTPException
+from fastapi.responses import JSONResponse
+from google import genai
 
 try:
     from ..config.loader import get_econometric_signal, get_locale
     from ..models.schemas import (
+        AdjacentSkill,
         AggregateIntelligence,
+        ExtractedSkill,
         IndicatorValue,
         MarketSignalsRequest,
         MarketSignalsResponse,
@@ -17,20 +25,29 @@ try:
         PolicymakerLocaleStats,
         PolicySignal,
         ProfileResponse,
+        ScarcityIndex,
         SectorRisk,
         SkillAggregate,
         TrainingProvider,
         UserNarrativeRequest,
     )
+    from ..services.agent_orchestrator import run_agent
     from ..services.ai_engine import extract_skills
     from ..services.frey_osborne import get_sector_risk_profile, get_task_bucket_averages
-    from ..services.institutional_data import generate_policy_signals, get_live_indicators
+    from ..services.institutional_data import (
+        compute_scarcity_index,
+        generate_policy_signals,
+        get_automation_itu_context,
+        get_live_indicators,
+    )
     from ..services.search_engine import find_market_signals, find_training
     from ..services.skill_enricher import enrich_profile
 except (ImportError, ModuleNotFoundError):
     from config.loader import get_econometric_signal, get_locale
     from models.schemas import (
+        AdjacentSkill,
         AggregateIntelligence,
+        ExtractedSkill,
         IndicatorValue,
         MarketSignalsRequest,
         MarketSignalsResponse,
@@ -39,16 +56,25 @@ except (ImportError, ModuleNotFoundError):
         PolicymakerLocaleStats,
         PolicySignal,
         ProfileResponse,
+        ScarcityIndex,
         SectorRisk,
         SkillAggregate,
         TrainingProvider,
         UserNarrativeRequest,
     )
+    from services.agent_orchestrator import run_agent
     from services.ai_engine import extract_skills
     from services.frey_osborne import get_sector_risk_profile, get_task_bucket_averages
-    from services.institutional_data import generate_policy_signals, get_live_indicators
+    from services.institutional_data import (
+        compute_scarcity_index,
+        generate_policy_signals,
+        get_automation_itu_context,
+        get_live_indicators,
+    )
     from services.search_engine import find_market_signals, find_training
     from services.skill_enricher import enrich_profile
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api", tags=["api"])
 
@@ -156,93 +182,223 @@ def _make_pass_id(worker_name: str, locale_code: str, issue_date: str, isco_code
     return hashlib.sha256(raw.encode()).hexdigest()[:16]
 
 
-@router.post("/extract", response_model=ProfileResponse)
-def extract_profile(payload: UserNarrativeRequest) -> ProfileResponse:
+# ── Pipeline helper functions ──────────────────────────────────────────────────
+
+def _get_gemini_client():
+    api_key = os.getenv("GEMINI_API_KEY")
+    if not api_key:
+        raise HTTPException(status_code=500, detail="GEMINI_API_KEY is not configured.")
+    return genai.Client(api_key=api_key)
+
+
+def _linear_pipeline_extract(payload: UserNarrativeRequest) -> ProfileResponse:
     """
-    Full pipeline:
-      1. Gemini extracts skills + ISCO codes + user_city from narrative.
-      2. skill_enricher looks up real Frey-Osborne (2013) scores per ISCO code.
-      3. skill_enricher runs Tavily search for the user's specific city to ground resilience_note.
-      4. Generates a SHA-256 pass_id for QR verification.
-      5. Returns enriched ProfileResponse — no guessed scores, no generic notes.
+    Original synchronous pipeline — completely unchanged.
+    Wrapped here so the agent can fall back to it on failure.
+    """
+    profile, gemini_city = extract_skills(payload.narrative, payload.locale)
+    user_city = payload.region.strip() or gemini_city or "the region"
+    enriched = enrich_profile(profile, user_city, payload.locale)
+    enriched.user_city = user_city
+    return enriched
+
+
+def _build_from_agent_result(
+    agent_result: dict,
+    payload: UserNarrativeRequest,
+) -> ProfileResponse:
+    """Convert the agent's final JSON into a ProfileResponse."""
+    itu_ctx = get_automation_itu_context(payload.locale)
+    hci: float = itu_ctx.get("hci_score", 0.45)
+    internet_pct: float = itu_ctx.get("internet_penetration_pct") or 35.0
+
+    enriched_skills: list[ExtractedSkill] = []
+    for sk in agent_result.get("skills", []):
+        isco_code = str(sk.get("isco_code", "0000")).strip()
+        fo_score = float(sk.get("frey_osborne_score") or 0.5)
+
+        scarcity_raw = compute_scarcity_index(
+            isco_code=isco_code,
+            automation_score=fo_score,
+            hci=hci,
+            internet_pct=internet_pct,
+        )
+        scarcity = ScarcityIndex(
+            score=scarcity_raw.get("score", 0),
+            label=scarcity_raw.get("label", ""),
+            tier=scarcity_raw.get("tier", "low"),
+            source=scarcity_raw.get("source", ""),
+        )
+
+        adjacent = [
+            AdjacentSkill(
+                isco_code=a.get("isco_code", ""),
+                label=a.get("label", ""),
+                resilience_delta=a.get("resilience_delta", 0.0),
+                rationale=a.get("rationale", ""),
+                training_type=a.get("training_type", ""),
+                estimated_weeks=int(a.get("estimated_weeks", 0)),
+            )
+            for a in sk.get("adjacent_skills", [])
+        ]
+
+        enriched_skills.append(
+            ExtractedSkill(
+                label=sk.get("label", "Unknown skill"),
+                isco_code=isco_code,
+                esco_code=sk.get("esco_code", ""),
+                status=sk.get("status", "durable"),
+                frey_osborne_score=fo_score,
+                ilo_task_type=sk.get("ilo_task_type", "mixed"),
+                resilience_note=sk.get("resilience_note", ""),
+                adjacent_skills=adjacent,
+                scarcity_index=scarcity,
+            )
+        )
+
+    return ProfileResponse(
+        user_skills=enriched_skills,
+        matches=agent_result.get("matches", []),
+        user_city=agent_result.get("user_city") or payload.region or "the region",
+        agent_meta={
+            "agent_ran": True,
+            "agent_summary": agent_result.get("agent_summary", ""),
+            "tool_calls_made": agent_result.get("tool_calls_made", 0),
+            "search_decisions": agent_result.get("search_decisions", []),
+        },
+    )
+
+
+def _apply_post_processing(
+    enriched: ProfileResponse,
+    payload: UserNarrativeRequest,
+) -> ProfileResponse:
+    """
+    Shared post-processing applied after BOTH agent and linear paths:
+      - Gender wage adjustment
+      - Assessment store append (including agent_meta fields)
+      - SHA-256 pass_id generation and verification store entry
+    """
+    # Gender wage adjustment
+    if payload.gender == "female":
+        try:
+            locale_cfg = get_locale(payload.locale)
+            gwg = locale_cfg.get("gender_wage_gap", {})
+            gap_pct: float = gwg.get("gap_pct", 0.0)
+            gap_source: str = gwg.get("source", "ILO Global Wage Report 2024")
+            if gap_pct > 0:
+                for match in enriched.matches:
+                    match.gender_adjusted_wage_floor = match.wage_floor
+                    match.gender_note = (
+                        f"ILO-adjusted wage floor for women in this region "
+                        f"(women earn ~{round(gap_pct * 100)}% less). "
+                        f"Source: {gap_source}"
+                    )
+        except Exception:
+            pass
+
+    # Assessment store record (cap at 1000)
+    meta = enriched.agent_meta or {}
+    assessment_record = {
+        "locale": payload.locale,
+        "timestamp": _datetime.utcnow().isoformat(),
+        "city": enriched.user_city,
+        "gender": payload.gender or None,
+        "agent_ran": meta.get("agent_ran", False),
+        "tool_calls_made": meta.get("tool_calls_made", 0),
+        "agent_summary": meta.get("agent_summary", ""),
+        "skills": [
+            {
+                "isco_code": s.isco_code,
+                "label": s.label,
+                "automation_score": s.frey_osborne_score,
+                "status": s.status,
+                "ilo_task_type": s.ilo_task_type,
+            }
+            for s in enriched.user_skills
+        ],
+    }
+    if len(assessment_store) >= 1000:
+        assessment_store.pop(0)
+    assessment_store.append(assessment_record)
+
+    # SHA-256 pass_id
+    issue_date = _date.today().isoformat()
+    worker_name = payload.worker_name or "Anonymous"
+    isco_codes = [s.isco_code for s in enriched.user_skills if s.isco_code]
+    pass_id = _make_pass_id(worker_name, payload.locale, issue_date, isco_codes)
+    enriched.pass_id = pass_id
+
+    skill_labels = [f"{s.label} (ISCO {s.isco_code})" for s in enriched.user_skills]
+    _verification_store[pass_id] = {
+        "verified": True,
+        "worker_name": worker_name,
+        "locale": payload.locale,
+        "issued": issue_date,
+        "skills": skill_labels,
+        "source": "UNMAPPED Protocol — Open Infrastructure for the Informal Economy",
+        "note": (
+            f"This credential was generated using ILO ISCO-08 taxonomy and "
+            f"Frey-Osborne (2013) automation scoring. "
+            f"Verify authenticity at unmapped.world/verify/{pass_id}"
+        ),
+    }
+
+    return enriched
+
+
+# ── Extraction endpoint ────────────────────────────────────────────────────────
+
+@router.post("/extract", response_model=ProfileResponse)
+async def extract_profile(payload: UserNarrativeRequest):
+    """
+    Agentic pipeline:
+      1. Gemini agent assesses narrative quality and decides the execution plan.
+      2. Agent calls extract_skills → score_skill → search_market (selective) → get_adjacent_skills.
+      3. Agent produces enriched skills JSON; _build_from_agent_result converts to ProfileResponse.
+      4. On 202: returns clarifying question to the frontend for one follow-up.
+      5. On any agent failure: silent fallback to the original linear pipeline.
+
+    The API response shape, the PDF, and all downstream UI are identical for both paths.
     """
     try:
-        profile, gemini_city = extract_skills(payload.narrative, payload.locale)
-        user_city = payload.region.strip() or gemini_city or "the region"
-        enriched = enrich_profile(profile, user_city, payload.locale)
-        enriched.user_city = user_city
+        gemini_client = _get_gemini_client()
+        agent_result = await run_agent(
+            narrative=payload.narrative,
+            city=payload.region.strip() or "the region",
+            locale_code=payload.locale,
+            clarifying_answer=payload.clarifying_answer,
+            gemini_client=gemini_client,
+        )
 
-        # Apply gender wage adjustment if female
-        if payload.gender == "female":
-            try:
-                locale_cfg = get_locale(payload.locale)
-                gwg = locale_cfg.get("gender_wage_gap", {})
-                gap_pct: float = gwg.get("gap_pct", 0.0)
-                gap_source: str = gwg.get("source", "ILO Global Wage Report 2024")
-                if gap_pct > 0:
-                    for match in enriched.matches:
-                        match.gender_adjusted_wage_floor = match.wage_floor
-                        match.gender_note = (
-                            f"ILO-adjusted wage floor for women in this region "
-                            f"(women earn ~{round(gap_pct * 100)}% less). "
-                            f"Source: {gap_source}"
-                        )
-            except Exception:
-                pass  # wage adjustment is additive — never block the main flow
+        if agent_result["status"] == "awaiting_clarification":
+            return JSONResponse(
+                status_code=202,
+                content={
+                    "status": "awaiting_clarification",
+                    "clarifying_question": agent_result["clarifying_question"],
+                },
+            )
 
-        # --- Assessment intelligence store ---
-        # Append a summary record so the policymaker dashboard can show real aggregate data.
-        # Cap at 1000 records to keep memory bounded.
-        assessment_record = {
-            "locale": payload.locale,
-            "timestamp": _datetime.utcnow().isoformat(),
-            "city": user_city,
-            "gender": payload.gender or None,
-            "skills": [
-                {
-                    "isco_code": s.isco_code,
-                    "label": s.label,
-                    "automation_score": s.frey_osborne_score,
-                    "status": s.status,
-                    "ilo_task_type": s.ilo_task_type,
-                }
-                for s in enriched.user_skills
-            ],
-        }
-        if len(assessment_store) >= 1000:
-            assessment_store.pop(0)
-        assessment_store.append(assessment_record)
+        if agent_result["status"] == "complete":
+            enriched = _build_from_agent_result(agent_result["result"], payload)
+            return _apply_post_processing(enriched, payload)
 
-        # Generate verifiable pass_id
-        issue_date = _date.today().isoformat()
-        worker_name = payload.worker_name or "Anonymous"
-        isco_codes = [s.isco_code for s in enriched.user_skills if s.isco_code]
-        pass_id = _make_pass_id(worker_name, payload.locale, issue_date, isco_codes)
-        enriched.pass_id = pass_id
+        raise Exception(agent_result.get("error", "Agent returned unknown status"))
 
-        # Store in-memory verification record
-        skill_labels = [
-            f"{s.label} (ISCO {s.isco_code})" for s in enriched.user_skills
-        ]
-        _verification_store[pass_id] = {
-            "verified": True,
-            "worker_name": worker_name,
-            "locale": payload.locale,
-            "issued": issue_date,
-            "skills": skill_labels,
-            "source": "UNMAPPED Protocol — Open Infrastructure for the Informal Economy",
-            "note": (
-                f"This credential was generated using ILO ISCO-08 taxonomy and "
-                f"Frey-Osborne (2013) automation scoring. "
-                f"Verify authenticity at unmapped.world/verify/{pass_id}"
-            ),
-        }
-
-        return enriched
     except HTTPException:
         raise
     except Exception as exc:
-        raise HTTPException(status_code=500, detail=f"Extraction failed: {exc}") from exc
+        logger.warning(f"Agent failed, falling back to linear pipeline: {exc}")
+        try:
+            enriched = await asyncio.to_thread(_linear_pipeline_extract, payload)
+            return _apply_post_processing(enriched, payload)
+        except HTTPException:
+            raise
+        except Exception as exc2:
+            raise HTTPException(
+                status_code=500, detail=f"Extraction failed: {exc2}"
+            ) from exc2
 
 
 @router.get("/verify/{pass_id}")

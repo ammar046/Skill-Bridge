@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Info, ShieldCheck, AlertTriangle, Zap, ChevronDown, ChevronRight } from "lucide-react";
+import { Info, ShieldCheck, AlertTriangle, Zap, ChevronDown, ChevronRight, Search, Database } from "lucide-react";
 import type { Skill } from "@/types/api";
 
 // ILO Future of Work (2020) task-content index labels
@@ -73,6 +73,8 @@ export function SkillBadge({ skill }: { skill: Skill }) {
   const ilo = getIloLabel(skill.iloTaskType);
   const hasAdjacent = (skill.adjacentSkills?.length ?? 0) > 0;
   const hasTavilyEvidence = skill.resilienceNote?.startsWith("Live evidence");
+  const agentSearched = skill.searchedByAgent === true;
+  const agentNotSearched = skill.searchedByAgent === false;
 
   const badgeColors = isDurable
     ? "border-signal-durable/40 bg-signal-durable-soft text-signal-durable"
@@ -171,6 +173,29 @@ export function SkillBadge({ skill }: { skill: Skill }) {
                     Source: Frey &amp; Osborne (2013) "The Future of Employment" · Oxford Martin Programme ·
                     LMIC-adjusted per ILO working paper (2019) · ILO-ISCO O*NET cross-walk
                   </p>
+                </div>
+              )}
+
+              {/* Agent search decision — shown only when agent ran */}
+              {(agentSearched || agentNotSearched) && (
+                <div className="flex items-start gap-1.5 rounded-md border border-hairline bg-muted/30 px-2.5 py-2">
+                  {agentSearched ? (
+                    <Search className="mt-0.5 h-3 w-3 shrink-0 text-blue-500" />
+                  ) : (
+                    <Database className="mt-0.5 h-3 w-3 shrink-0 text-muted-foreground" />
+                  )}
+                  <div>
+                    <p className="text-[10px] font-semibold text-foreground">
+                      {agentSearched
+                        ? "Live market search conducted for this skill"
+                        : "Oxford 2013 data used · live search not needed"}
+                    </p>
+                    {skill.searchReason && (
+                      <p className="mt-0.5 text-[9px] italic text-muted-foreground">
+                        Reason: {skill.searchReason}
+                      </p>
+                    )}
+                  </div>
                 </div>
               )}
 

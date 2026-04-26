@@ -124,6 +124,20 @@ function Profile() {
             <Sparkles className="h-3 w-3" /> Signal Engine v0.1
           </p>
         </div>
+
+        {/* Agent summary bar — shown only when the agentic pipeline ran */}
+        {profile.agentMeta?.agentRan && profile.agentMeta.agentSummary && (
+          <p className="mb-4 flex items-center gap-1.5 text-[13px] text-muted-foreground">
+            <Sparkles className="h-4 w-4 shrink-0" />
+            <span>{profile.agentMeta.agentSummary}</span>
+            {profile.agentMeta.toolCallsMade != null && (
+              <span className="ml-1 opacity-60">
+                · {profile.agentMeta.toolCallsMade} tool calls
+              </span>
+            )}
+          </p>
+        )}
+
         <ul className="grid gap-4 md:grid-cols-2">
           {profile.skills.map((s, i) => (
             <SkillCard key={s.id} skill={s} index={i} />

@@ -9,6 +9,7 @@ class UserNarrativeRequest(BaseModel):
     region: str = ""  # user's explicitly entered city/region — overrides Gemini city extraction
     worker_name: str = ""  # used for pass_id generation
     gender: str = ""  # 'female' | 'male' | 'other' | '' (empty = not provided)
+    clarifying_answer: str | None = None  # second-pass answer to agent clarifying question
 
 
 class AdjacentSkill(BaseModel):
@@ -78,6 +79,7 @@ class ProfileResponse(BaseModel):
     matches: list[OpportunityMatch]
     user_city: str = ""
     pass_id: str = ""  # SHA-256 credential identifier for QR verification
+    agent_meta: dict = {}  # agent transparency: agent_ran, agent_summary, tool_calls_made, search_decisions
 
 
 class OpportunitySearchRequest(BaseModel):
